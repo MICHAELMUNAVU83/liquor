@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="csrf-token" content={get_csrf_token()} />
+    <title>Admin Login · The Mint Liquor Store</title>
+    <link rel="stylesheet" href={~p"/assets/app.css"} />
+  </head>
+  <body>
+    <div class="flex min-h-screen">
+      <!-- Left brand panel -->
+      <div class="hidden lg:flex lg:w-1/2 bg-zinc-900 relative overflow-hidden flex-col justify-between p-12">
+        <div
+          class="absolute inset-0 bg-cover bg-center opacity-20"
+          style="background-image: url('https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=1200&auto=format&fit=crop')"
+        ></div>
+        <div class="relative z-10">
+          <img src="/images/logo.png" alt="The Mint Liquor Store" class="h-14 w-auto object-contain" />
+        </div>
+        <div class="relative z-10">
+          <blockquote class="text-white text-2xl font-light leading-relaxed mb-6">
+            "In wine there is wisdom,<br />
+            in beer there is freedom,<br />
+            in water there is bacteria."
+          </blockquote>
+          <cite class="text-zinc-400 text-sm not-italic">— Benjamin Franklin</cite>
+        </div>
+        <div class="relative z-10 flex gap-6">
+          <div class="text-center">
+            <p class="text-white font-black text-2xl">12+</p>
+            <p class="text-zinc-400 text-xs uppercase tracking-wide">Brands</p>
+          </div>
+          <div class="text-center">
+            <p class="text-white font-black text-2xl">50+</p>
+            <p class="text-zinc-400 text-xs uppercase tracking-wide">Products</p>
+          </div>
+          <div class="text-center">
+            <p class="text-white font-black text-2xl">10k+</p>
+            <p class="text-zinc-400 text-xs uppercase tracking-wide">Customers</p>
+          </div>
+        </div>
+      </div>
+
+      <!-- Right login form -->
+      <div class="flex-1 flex items-center justify-center px-6 py-12 bg-white">
+        <div class="w-full max-w-sm">
+          <!-- Logo (mobile) -->
+          <div class="lg:hidden mb-8 text-center">
+            <img src="/images/logo.png" alt="The Mint Liquor Store" class="h-12 w-auto object-contain mx-auto" />
+          </div>
+
+          <h1 class="text-zinc-900 text-3xl font-black mb-1">Admin Sign In</h1>
+          <p class="text-zinc-500 text-sm mb-8">Enter your credentials to access the dashboard.</p>
+
+          <%= if @error_message do %>
+            <div class="mb-6 bg-red-50 border border-red-200 rounded-lg px-4 py-3 flex items-start gap-3">
+              <svg class="w-4 h-4 text-red-500 mt-0.5 shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm-.75-9.25a.75.75 0 011.5 0v3.5a.75.75 0 01-1.5 0v-3.5zM10 14a1 1 0 110-2 1 1 0 010 2z" clip-rule="evenodd"/>
+              </svg>
+              <p class="text-red-600 text-sm"><%= @error_message %></p>
+            </div>
+          <% end %>
+
+          <form action={~p"/admin/login"} method="post" class="space-y-5">
+            <input type="hidden" name="_csrf_token" value={get_csrf_token()} />
+
+            <div>
+              <label for="email" class="block text-zinc-700 text-sm font-semibold mb-1.5">
+                Email address
+              </label>
+              <input
+                id="email"
+                type="email"
+                name="email"
+                required
+                autocomplete="email"
+                placeholder="admin@themintliquorstore.co.ke"
+                class="w-full bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              />
+            </div>
+
+            <div>
+              <label for="password" class="block text-zinc-700 text-sm font-semibold mb-1.5">
+                Password
+              </label>
+              <input
+                id="password"
+                type="password"
+                name="password"
+                required
+                autocomplete="current-password"
+                placeholder="••••••••"
+                class="w-full bg-zinc-900 border border-zinc-800 text-white placeholder-zinc-600 rounded-lg px-4 py-3 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-transparent"
+              />
+            </div>
+
+            <button
+              type="submit"
+              class="w-full bg-amber-500 hover:bg-amber-400 text-white font-bold text-sm py-3 rounded-lg transition uppercase tracking-widest"
+            >
+              Sign in to Dashboard
+            </button>
+          </form>
+
+          <p class="mt-8 text-center text-zinc-400 text-xs">
+            &larr;
+            <a href={~p"/"} class="text-zinc-500 hover:text-zinc-900 transition">Back to store</a>
+          </p>
+        </div>
+      </div>
+    </div>
+  </body>
+</html>

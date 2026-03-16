@@ -1,0 +1,11 @@
+<.page_hero
+  title="Products"
+  breadcrumb={[{"Home", "/"}, {"Shop", "/shop"}]}
+  image_url="https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=1600&auto=format&fit=crop"
+/>
+
+<.shop_layout>
+  <.filter_toolbar />
+  <.product_grid products={@products} />
+  <.pagination current_page={1} total_pages={3} base_url="/shop" />
+</.shop_layout>
