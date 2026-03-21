@@ -24,7 +24,8 @@ defmodule LiquorWeb.Router do
     pipe_through :browser
 
     live "/",        HomeLive
-    live "/shop",    ShopLive
+    live "/shop",          ShopLive
+    live "/shop/:slug",    ProductLive
     live "/about",   AboutLive
     live "/contact", ContactLive
     live "/cart",             CartLive
@@ -65,6 +66,8 @@ defmodule LiquorWeb.Router do
       live "/inventory",  InventoryLive,  :index
       live "/reports",    ReportsLive,    :index
       live "/settings",   SettingsLive,   :index
+      live "/users",      UsersLive,      :index
+      live "/help",       HelpLive,       :index
     end
   end
 

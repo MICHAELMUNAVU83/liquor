@@ -432,8 +432,8 @@ defmodule LiquorWeb.ShopLive do
       if(@view == "list", do: "flex", else: "flex flex-col")
     ]}>
       <!-- Image -->
-      <div class={[
-        "relative overflow-hidden bg-zinc-50 shrink-0",
+      <a href={"/shop/#{@product.slug}"} class={[
+        "relative overflow-hidden bg-zinc-50 shrink-0 block",
         if(@view == "list", do: "w-48 self-stretch", else: "aspect-[4/3]")
       ]}>
         <%= if @product.image_url do %>
@@ -475,8 +475,8 @@ defmodule LiquorWeb.ShopLive do
             Out of stock
           </span>
         <% end %>
-      </div>
-      
+      </a>
+
     <!-- Info -->
       <div class="flex flex-col flex-1 p-4">
         <p class="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-1">
@@ -484,9 +484,9 @@ defmodule LiquorWeb.ShopLive do
           {if @product.brand, do: " · #{@product.brand.name}"}
         </p>
 
-        <h3 class="font-black text-zinc-900 leading-snug mb-2 line-clamp-2">
+        <a href={"/shop/#{@product.slug}"} class="font-black text-zinc-900 leading-snug mb-2 line-clamp-2 hover:text-orange-500 transition block">
           {@product.name}
-        </h3>
+        </a>
         
     <!-- Variant / size selector -->
         <%= if length(@variants) > 1 do %>

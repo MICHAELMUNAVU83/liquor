@@ -60,19 +60,19 @@ defmodule LiquorWeb.Admin.SettingsLive do
 
   def handle_event("save_store", %{"settings" => params}, socket) do
     keys = ~w(store_name store_short_name store_tagline store_phone store_email site_url)
-    Enum.each(keys, fn k -> if v = params[k], do: Settings.set(k, v) end)
+    Enum.each(keys, fn k -> Settings.set(k, params[k] || "") end)
     {:noreply, assign(socket, settings: Settings.all(), saved: true)}
   end
 
   def handle_event("save_location", %{"settings" => params}, socket) do
     keys = ~w(store_address store_map_query hours_weekday hours_saturday hours_sunday)
-    Enum.each(keys, fn k -> if v = params[k], do: Settings.set(k, v) end)
+    Enum.each(keys, fn k -> Settings.set(k, params[k] || "") end)
     {:noreply, assign(socket, settings: Settings.all(), saved: true)}
   end
 
   def handle_event("save_about", %{"settings" => params}, socket) do
     keys = ~w(about_hero_heading about_hero_desc about_hero_image about_mission about_values)
-    Enum.each(keys, fn k -> if v = params[k], do: Settings.set(k, v) end)
+    Enum.each(keys, fn k -> Settings.set(k, params[k] || "") end)
     {:noreply, assign(socket, settings: Settings.all(), saved: true)}
   end
 
@@ -106,43 +106,34 @@ defmodule LiquorWeb.Admin.SettingsLive do
   end
 
   def handle_event("save_banners", %{"settings" => params}, socket) do
-    # Save product selections and auto-fill image from product if chosen
-    for {slot, prefix} <- [
+    for {_slot, prefix} <- [
           {"main", "hero_main"},
           {"tile1", "hero_tile1"},
           {"tile2", "hero_tile2"}
         ] do
-      pid = params["#{prefix}_product_id"]
-      Settings.set("#{prefix}_product_id", pid || "")
+      pid = params["#{prefix}_product_id"] || ""
+      Settings.set("#{prefix}_product_id", pid)
 
-      if pid && pid != "" do
-        case Map.get(socket.assigns.products_map, pid) do
-          nil ->
-            :ok
-
-          product ->
-            if product.image_url, do: Settings.set("#{prefix}_image", product.image_url)
-            # Auto-fill title with product name only if title is blank
-            if prefix == "hero_main" or prefix == "hero_tile1" or prefix == "hero_tile2" do
-              title_key = "#{prefix}_title"
-
-              if (params[title_key] || "") == "" do
-                Settings.set(title_key, product.name)
-              end
-            end
+      # Determine effective image: product image takes priority over manual URL
+      image_url =
+        if pid != "" do
+          case Map.get(socket.assigns.products_map, pid) do
+            nil -> params["#{prefix}_image"] || ""
+            product -> product.image_url || params["#{prefix}_image"] || ""
+          end
+        else
+          params["#{prefix}_image"] || ""
         end
-      end
 
-      _ = slot
+      Settings.set("#{prefix}_image", image_url)
     end
 
-    text_keys = ~w(hero_main_label hero_main_title hero_main_price hero_main_image hero_main_link
-                   hero_tile1_label hero_tile1_title hero_tile1_subtitle hero_tile1_image hero_tile1_link
-                   hero_tile2_title hero_tile2_price hero_tile2_image hero_tile2_link)
-    Enum.each(text_keys, fn k ->
-      v = params[k]
-      if v && v != "", do: Settings.set(k, v)
-    end)
+    # Always save all text fields (empty string reverts to default on next load)
+    text_keys = ~w(hero_main_label hero_main_title hero_main_price hero_main_link
+                   hero_tile1_label hero_tile1_title hero_tile1_subtitle hero_tile1_link
+                   hero_tile2_title hero_tile2_price hero_tile2_link)
+
+    Enum.each(text_keys, fn k -> Settings.set(k, params[k] || "") end)
 
     new_settings = Settings.all()
 
@@ -533,13 +524,9 @@ defmodule LiquorWeb.Admin.SettingsLive do
               />
             </div>
             <.settings_field
-              label="Override Image URL (optional – leave blank to use product image)"
+              label="Image URL (auto-filled from product above, or paste your own)"
               name="settings[hero_main_image]"
-              value={
-                if (@settings["hero_main_product_id"] || "") == "",
-                  do: @settings["hero_main_image"],
-                  else: ""
-              }
+              value={@banner_previews["main"] || @settings["hero_main_image"] || ""}
               placeholder="https://..."
             />
           </div>
@@ -604,13 +591,9 @@ defmodule LiquorWeb.Admin.SettingsLive do
               />
             </div>
             <.settings_field
-              label="Override Image URL (optional)"
+              label="Image URL (auto-filled from product above, or paste your own)"
               name="settings[hero_tile1_image]"
-              value={
-                if (@settings["hero_tile1_product_id"] || "") == "",
-                  do: @settings["hero_tile1_image"],
-                  else: ""
-              }
+              value={@banner_previews["tile1"] || @settings["hero_tile1_image"] || ""}
               placeholder="https://..."
             />
           </div>
@@ -669,13 +652,9 @@ defmodule LiquorWeb.Admin.SettingsLive do
               />
             </div>
             <.settings_field
-              label="Override Image URL (optional)"
+              label="Image URL (auto-filled from product above, or paste your own)"
               name="settings[hero_tile2_image]"
-              value={
-                if (@settings["hero_tile2_product_id"] || "") == "",
-                  do: @settings["hero_tile2_image"],
-                  else: ""
-              }
+              value={@banner_previews["tile2"] || @settings["hero_tile2_image"] || ""}
               placeholder="https://..."
             />
           </div>
