@@ -162,33 +162,9 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "24.99",
-        compare_price: "29.99",
-        stock_quantity: 150,
-        is_default: true,
-        sku: "JAM-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "40.0",
-        price: "32.99",
-        compare_price: "37.99",
-        stock_quantity: 80,
-        is_default: false,
-        sku: "JAM-1L"
-      },
-      %{
-        size: "1.75L",
-        abv: "40.0",
-        price: "44.99",
-        compare_price: "52.99",
-        stock_quantity: 60,
-        is_default: false,
-        sku: "JAM-175L"
-      }
+      %{size: "700ML", abv: "40.0", price: "3500", compare_price: "3999", stock_quantity: 150, is_default: true,  sku: "JAM-700ML"},
+      %{size: "1L",    abv: "40.0", price: "4800", compare_price: "5299", stock_quantity: 80,  is_default: false, sku: "JAM-1L"},
+      %{size: "1.75L", abv: "40.0", price: "6500", compare_price: "7199", stock_quantity: 60,  is_default: false, sku: "JAM-175L"}
     ]
   },
   %{
@@ -204,30 +180,9 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "22.99",
-        stock_quantity: 200,
-        is_default: true,
-        sku: "JD-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "40.0",
-        price: "29.99",
-        stock_quantity: 120,
-        is_default: false,
-        sku: "JD-1L"
-      },
-      %{
-        size: "1.75L",
-        abv: "40.0",
-        price: "39.99",
-        stock_quantity: 75,
-        is_default: false,
-        sku: "JD-175L"
-      }
+      %{size: "700ML", abv: "40.0", price: "3200", stock_quantity: 200, is_default: true,  sku: "JD-700ML"},
+      %{size: "1L",    abv: "40.0", price: "4200", stock_quantity: 120, is_default: false, sku: "JD-1L"},
+      %{size: "1.75L", abv: "40.0", price: "5800", stock_quantity: 75,  is_default: false, sku: "JD-175L"}
     ]
   },
   %{
@@ -242,22 +197,8 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "29.99",
-        stock_quantity: 90,
-        is_default: true,
-        sku: "JWB-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "40.0",
-        price: "38.99",
-        stock_quantity: 55,
-        is_default: false,
-        sku: "JWB-1L"
-      }
+      %{size: "700ML", abv: "40.0", price: "4500", stock_quantity: 90, is_default: true,  sku: "JWB-700ML"},
+      %{size: "1L",    abv: "40.0", price: "5800", stock_quantity: 55, is_default: false, sku: "JWB-1L"}
     ]
   },
   %{
@@ -272,22 +213,8 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1547595628-c61a29f496f0?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "35.99",
-        stock_quantity: 70,
-        is_default: true,
-        sku: "HVS-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "40.0",
-        price: "48.99",
-        stock_quantity: 40,
-        is_default: false,
-        sku: "HVS-1L"
-      }
+      %{size: "700ML", abv: "40.0", price: "6000", stock_quantity: 70, is_default: true,  sku: "HVS-700ML"},
+      %{size: "1L",    abv: "40.0", price: "7800", stock_quantity: 40, is_default: false, sku: "HVS-1L"}
     ]
   },
   %{
@@ -302,24 +229,8 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1598373182133-52452f7691ef?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "42.99",
-        compare_price: "49.99",
-        stock_quantity: 60,
-        is_default: true,
-        sku: "PAT-SLV-700ML"
-      },
-      %{
-        size: "1.75L",
-        abv: "40.0",
-        price: "79.99",
-        compare_price: "89.99",
-        stock_quantity: 30,
-        is_default: false,
-        sku: "PAT-SLV-175L"
-      }
+      %{size: "700ML", abv: "40.0", price: "6500", compare_price: "7299", stock_quantity: 60, is_default: true,  sku: "PAT-SLV-700ML"},
+      %{size: "1.75L", abv: "40.0", price: "11500", compare_price: "12499", stock_quantity: 30, is_default: false, sku: "PAT-SLV-175L"}
     ]
   },
   %{
@@ -334,30 +245,9 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1491553895911-0055eca6402d?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "34.99",
-        stock_quantity: 100,
-        is_default: true,
-        sku: "GG-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "40.0",
-        price: "44.99",
-        stock_quantity: 65,
-        is_default: false,
-        sku: "GG-1L"
-      },
-      %{
-        size: "1.75L",
-        abv: "40.0",
-        price: "64.99",
-        stock_quantity: 40,
-        is_default: false,
-        sku: "GG-175L"
-      }
+      %{size: "700ML", abv: "40.0", price: "5500", stock_quantity: 100, is_default: true,  sku: "GG-700ML"},
+      %{size: "1L",    abv: "40.0", price: "7200", stock_quantity: 65,  is_default: false, sku: "GG-1L"},
+      %{size: "1.75L", abv: "40.0", price: "9500", stock_quantity: 40,  is_default: false, sku: "GG-175L"}
     ]
   },
   %{
@@ -372,22 +262,8 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1571104508999-893933ded431?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "37.5",
-        price: "16.99",
-        stock_quantity: 180,
-        is_default: true,
-        sku: "BAC-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "37.5",
-        price: "20.99",
-        stock_quantity: 110,
-        is_default: false,
-        sku: "BAC-1L"
-      }
+      %{size: "700ML", abv: "37.5", price: "2500", stock_quantity: 180, is_default: true,  sku: "BAC-700ML"},
+      %{size: "1L",    abv: "37.5", price: "3200", stock_quantity: 110, is_default: false, sku: "BAC-1L"}
     ]
   },
   %{
@@ -402,22 +278,8 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1551538827-9c037cb4f32a?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "43.1",
-        price: "21.99",
-        stock_quantity: 95,
-        is_default: true,
-        sku: "TAN-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "43.1",
-        price: "27.99",
-        stock_quantity: 60,
-        is_default: false,
-        sku: "TAN-1L"
-      }
+      %{size: "700ML", abv: "43.1", price: "3500", stock_quantity: 95, is_default: true,  sku: "TAN-700ML"},
+      %{size: "1L",    abv: "43.1", price: "4500", stock_quantity: 60, is_default: false, sku: "TAN-1L"}
     ]
   },
   %{
@@ -432,22 +294,8 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1569529465841-dfecdab7503b?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "45.0",
-        price: "28.99",
-        stock_quantity: 55,
-        is_default: true,
-        sku: "BT-700ML"
-      },
-      %{
-        size: "1.75L",
-        abv: "45.0",
-        price: "54.99",
-        stock_quantity: 25,
-        is_default: false,
-        sku: "BT-175L"
-      }
+      %{size: "700ML", abv: "45.0", price: "4200", stock_quantity: 55, is_default: true,  sku: "BT-700ML"},
+      %{size: "1.75L", abv: "45.0", price: "7800", stock_quantity: 25, is_default: false, sku: "BT-175L"}
     ]
   },
   %{
@@ -463,24 +311,8 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1527281400683-1aae777175f8?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "39.99",
-        compare_price: "45.99",
-        stock_quantity: 45,
-        is_default: true,
-        sku: "GV12-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "40.0",
-        price: "52.99",
-        compare_price: "59.99",
-        stock_quantity: 20,
-        is_default: false,
-        sku: "GV12-1L"
-      }
+      %{size: "700ML", abv: "40.0", price: "5500", compare_price: "6299", stock_quantity: 45, is_default: true,  sku: "GV12-700ML"},
+      %{size: "1L",    abv: "40.0", price: "7200", compare_price: "7999", stock_quantity: 20, is_default: false, sku: "GV12-1L"}
     ]
   },
   %{
@@ -495,30 +327,9 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1514362545857-3bc16c4c7d1b?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "17.99",
-        stock_quantity: 200,
-        is_default: true,
-        sku: "JB-700ML"
-      },
-      %{
-        size: "1L",
-        abv: "40.0",
-        price: "22.99",
-        stock_quantity: 140,
-        is_default: false,
-        sku: "JB-1L"
-      },
-      %{
-        size: "1.75L",
-        abv: "40.0",
-        price: "32.99",
-        stock_quantity: 80,
-        is_default: false,
-        sku: "JB-175L"
-      }
+      %{size: "700ML", abv: "40.0", price: "2800", stock_quantity: 200, is_default: true,  sku: "JB-700ML"},
+      %{size: "1L",    abv: "40.0", price: "3600", stock_quantity: 140, is_default: false, sku: "JB-1L"},
+      %{size: "1.75L", abv: "40.0", price: "5200", stock_quantity: 80,  is_default: false, sku: "JB-175L"}
     ]
   },
   %{
@@ -534,14 +345,7 @@ products_data = [
     image_url:
       "https://images.unsplash.com/photo-1598373182133-52452f7691ef?w=600&auto=format&fit=crop",
     variants: [
-      %{
-        size: "700ML",
-        abv: "40.0",
-        price: "46.99",
-        stock_quantity: 50,
-        is_default: true,
-        sku: "PAT-REP-700ML"
-      }
+      %{size: "700ML", abv: "40.0", price: "6999", stock_quantity: 50, is_default: true, sku: "PAT-REP-700ML"}
     ]
   }
 ]

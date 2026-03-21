@@ -717,7 +717,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
                     </div>
                     <div>
                       <label class="block text-xs font-semibold text-gray-500 mb-1">
-                        Price ($) *
+                        Price (KES) *
                       </label>
                       <input
                         type="number"
@@ -733,7 +733,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
                     </div>
                     <div>
                       <label class="block text-xs font-semibold text-gray-500 mb-1">
-                        Compare Price ($)
+                        Compare Price (KES)
                       </label>
                       <input
                         type="number"
@@ -785,9 +785,11 @@ defmodule LiquorWeb.Admin.ProductsLive do
                     </div>
                     <div class="flex items-end pb-2">
                       <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                        <input type="hidden" name="variant[is_default]" value="false" />
                         <input
                           type="checkbox"
                           name="variant[is_default]"
+                          value="true"
                           checked={Phoenix.HTML.Form.input_value(@variant_form, :is_default)}
                           class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
                         />
@@ -887,7 +889,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
                       KSh {Decimal.round(v.price, 2)}
                     </p>
                     <p class="col-span-2 text-sm text-gray-400">
-                      {if v.compare_price, do: "$#{Decimal.round(v.compare_price, 2)}", else: "—"}
+                      {if v.compare_price, do: "KSh #{Decimal.round(v.compare_price, 2)}", else: "—"}
                     </p>
                     <p class={[
                       "col-span-1 text-sm font-bold",
