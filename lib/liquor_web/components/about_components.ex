@@ -21,13 +21,17 @@ defmodule LiquorWeb.AboutComponents do
   the right with a headline, short description, "Contact Us" CTA, and a
   two-column checklist of USPs.
   """
+  attr :heading,   :string, default: "Nairobi's Home for Premium Spirits & Wine"
+  attr :desc,      :string, default: "We bring the world's finest spirits, wines, and craft beers straight to your door."
+  attr :image_url, :string, default: "https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=900&auto=format&fit=crop"
+
   def about_hero(assigns) do
     ~H"""
     <section class="max-w-screen-xl mx-auto grid grid-cols-1 lg:grid-cols-2 min-h-[520px]">
       <!-- Left: store image -->
       <div class="relative overflow-hidden bg-zinc-900 min-h-[360px] lg:min-h-full">
         <img
-          src="https://images.unsplash.com/photo-1566417713940-fe7c737a9ef2?w=900&auto=format&fit=crop"
+          src={@image_url}
           alt="The Mint Liquor Store, Nairobi"
           class="absolute inset-0 w-full h-full object-cover"
         />
@@ -36,12 +40,10 @@ defmodule LiquorWeb.AboutComponents do
       <!-- Right: copy -->
       <div class="bg-amber-50 flex flex-col justify-center px-10 py-14 lg:px-16">
         <h1 class="text-3xl md:text-4xl font-black text-zinc-900 leading-tight mb-5">
-          Nairobi's Home for<br />Premium Spirits &amp; Wine
+          <%= @heading %>
         </h1>
         <p class="text-sm text-zinc-600 leading-relaxed mb-8 max-w-md">
-          We bring the world's finest spirits, wines, and craft beers straight to your door.
-          Whether you're stocking a home bar or searching for the perfect gift, our curated
-          selection and knowledgeable team are here to help.
+          <%= @desc %>
         </p>
         <div class="mb-10">
           <a
@@ -110,6 +112,9 @@ defmodule LiquorWeb.AboutComponents do
   Centred eyebrow label + headline, followed by two equal-width text columns:
   "Our Mission" and "Core Values", each with two paragraphs of body copy.
   """
+  attr :mission, :string, default: ""
+  attr :values,  :string, default: ""
+
   def mission_values(assigns) do
     ~H"""
     <section class="max-w-screen-xl mx-auto px-4 py-16 border-t border-zinc-100">
@@ -129,15 +134,9 @@ defmodule LiquorWeb.AboutComponents do
         <div>
           <h3 class="text-lg font-black text-zinc-900 mb-5">Our Mission</h3>
           <div class="space-y-4 text-sm text-zinc-600 leading-relaxed">
-            <p>
-              Our mission is to connect people with exceptional drinks from around the world.
-              We believe great occasions deserve great bottles, and we're committed to making
-              premium spirits, wines, and beers accessible to everyone.
-            </p>
-            <p>
-              From everyday favourites to rare collector's expressions, we hand-pick every product
-              in our range for quality, provenance, and value — so you can shop with confidence.
-            </p>
+            <%= for para <- String.split(@mission || "", "\n\n", trim: true) do %>
+              <p><%= para %></p>
+            <% end %>
           </div>
         </div>
 
@@ -145,16 +144,9 @@ defmodule LiquorWeb.AboutComponents do
         <div>
           <h3 class="text-lg font-black text-zinc-900 mb-5">Core Values</h3>
           <div class="space-y-4 text-sm text-zinc-600 leading-relaxed">
-            <p>
-              <strong class="text-zinc-800">Quality first.</strong> Every product is verified for
-              authenticity before it reaches our shelves. We work directly with distilleries,
-              wineries, and trusted importers to guarantee provenance.
-            </p>
-            <p>
-              <strong class="text-zinc-800">Customer obsession.</strong> Fast delivery, easy returns,
-              and a team of experts ready to answer your questions — we measure success by how
-              happy you are with every order.
-            </p>
+            <%= for para <- String.split(@values || "", "\n\n", trim: true) do %>
+              <p><%= para %></p>
+            <% end %>
           </div>
         </div>
       </div>

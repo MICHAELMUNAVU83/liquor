@@ -131,6 +131,40 @@ defmodule Liquor.Orders do
   # Order Items
   # ---------------------------------------------------------------------------
 
+  def get_order_by_reference(reference) do
+    case Repo.get_by(Order, payment_reference: reference) do
+      nil   -> nil
+      order -> Repo.preload(order, [:items])
+    end
+  end
+
+  def create_order_with_items(order_attrs, cart_items) do
+    Repo.transaction(fn ->
+      case create_order(order_attrs) do
+        {:ok, order} ->
+          Enum.each(cart_items, fn item ->
+            subtotal = Decimal.mult(item.price, Decimal.new(item.quantity))
+            case create_order_item(%{
+              order_id:           order.id,
+              product_variant_id: item.variant_id,
+              product_name:       item.product_name,
+              variant_sku:        item.sku,
+              variant_size:       item.size,
+              quantity:           item.quantity,
+              unit_price:         item.price,
+              subtotal:           subtotal
+            }) do
+              {:ok, _}     -> :ok
+              {:error, cs} -> Repo.rollback(cs)
+            end
+          end)
+          Repo.preload(order, [:items])
+        {:error, cs} ->
+          Repo.rollback(cs)
+      end
+    end)
+  end
+
   def create_order_item(attrs) do
     %OrderItem{} |> OrderItem.changeset(attrs) |> Repo.insert()
   end

@@ -8,11 +8,17 @@ defmodule LiquorWeb.Admin.CustomersLive do
     {:ok,
      socket
      |> assign(
-       page_title:       "Admin – Customers",
-       active_tab:       "customers",
-       search:           "",
+       page_title:        "Admin – Customers",
+       active_tab:        "customers",
+       search:            "",
        selected_customer: nil,
-       customer_orders:  []
+       customer_orders:   [],
+       show_add_customer: false,
+       ac_first_name:     "",
+       ac_last_name:      "",
+       ac_email:          "",
+       ac_phone:          "",
+       ac_error:          nil
      )
      |> load_customers(),
      layout: {LiquorWeb.Layouts, :admin}}
@@ -24,7 +30,7 @@ defmodule LiquorWeb.Admin.CustomersLive do
   end
 
   @impl true
-  def handle_event("search", %{"q" => q}, socket) do
+  def handle_event("search", %{"value" => q}, socket) do
     {:noreply, socket |> assign(search: q) |> load_customers()}
   end
 
@@ -39,6 +45,43 @@ defmodule LiquorWeb.Admin.CustomersLive do
     {:noreply, assign(socket, selected_customer: nil, customer_orders: [])}
   end
 
+  def handle_event("toggle_add_customer", _params, socket) do
+    {:noreply, assign(socket,
+      show_add_customer: !socket.assigns.show_add_customer,
+      ac_first_name:     "",
+      ac_last_name:      "",
+      ac_email:          "",
+      ac_phone:          "",
+      ac_error:          nil
+    )}
+  end
+
+  def handle_event("ac_field", %{"field" => field, "value" => value}, socket) do
+    key = String.to_existing_atom("ac_#{field}")
+    {:noreply, assign(socket, [{key, value}])}
+  end
+
+  def handle_event("save_customer", _params, socket) do
+    attrs = %{
+      first_name: socket.assigns.ac_first_name,
+      last_name:  socket.assigns.ac_last_name,
+      email:      socket.assigns.ac_email,
+      phone:      socket.assigns.ac_phone
+    }
+    case Accounts.create_customer(attrs) do
+      {:ok, _user} ->
+        {:noreply,
+         socket
+         |> put_flash(:info, "Customer added successfully.")
+         |> assign(show_add_customer: false, ac_first_name: "", ac_last_name: "",
+                   ac_email: "", ac_phone: "", ac_error: nil)
+         |> load_customers()}
+      {:error, cs} ->
+        msg = cs.errors |> Enum.map(fn {f, {m, _}} -> "#{f} #{m}" end) |> Enum.join(", ")
+        {:noreply, assign(socket, ac_error: msg)}
+    end
+  end
+
   @impl true
   def render(assigns) do
     ~H"""
@@ -50,6 +93,15 @@ defmodule LiquorWeb.Admin.CustomersLive do
           <h1 class="text-2xl font-black text-gray-900">Customers</h1>
           <p class="text-sm text-gray-500 mt-0.5"><%= length(@customers) %> registered customers</p>
         </div>
+        <button
+          phx-click="toggle_add_customer"
+          class="flex items-center gap-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-4 py-2.5 rounded-lg transition shadow-sm"
+        >
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4v16m8-8H4"/>
+          </svg>
+          Add Customer
+        </button>
       </div>
 
       <!-- Stats summary -->
@@ -85,7 +137,7 @@ defmodule LiquorWeb.Admin.CustomersLive do
           placeholder="Search by name or email…"
           value={@search}
           phx-keyup="search"
-          name="q"
+          phx-debounce="200"
           class="border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400 w-72"
         />
       </div>
@@ -160,6 +212,67 @@ defmodule LiquorWeb.Admin.CustomersLive do
         </table>
       </div>
     </div>
+
+    <!-- Add Customer modal -->
+    <%= if @show_add_customer do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md">
+          <div class="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <h2 class="text-base font-black text-gray-900">New Customer</h2>
+            <button phx-click="toggle_add_customer" class="text-gray-400 hover:text-gray-600">
+              <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              </svg>
+            </button>
+          </div>
+          <div class="px-6 py-5 space-y-3">
+            <%= if @ac_error do %>
+              <p class="text-sm text-red-500 bg-red-50 border border-red-200 rounded-lg px-3 py-2"><%= @ac_error %></p>
+            <% end %>
+            <div class="grid grid-cols-2 gap-3">
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">First Name *</label>
+                <input type="text" value={@ac_first_name}
+                  phx-keyup="ac_field" phx-value-field="first_name"
+                  placeholder="First name"
+                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+              <div>
+                <label class="block text-xs font-semibold text-gray-500 mb-1">Last Name *</label>
+                <input type="text" value={@ac_last_name}
+                  phx-keyup="ac_field" phx-value-field="last_name"
+                  placeholder="Last name"
+                  class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+              </div>
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 mb-1">Phone</label>
+              <input type="text" value={@ac_phone}
+                phx-keyup="ac_field" phx-value-field="phone"
+                placeholder="+254 7xx xxx xxx"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-500 mb-1">Email (optional)</label>
+              <input type="email" value={@ac_email}
+                phx-keyup="ac_field" phx-value-field="email"
+                placeholder="customer@email.com"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+          </div>
+          <div class="px-6 pb-5 flex gap-3">
+            <button phx-click="toggle_add_customer"
+              class="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-lg hover:bg-gray-50 transition text-sm">
+              Cancel
+            </button>
+            <button phx-click="save_customer"
+              class="flex-1 bg-amber-500 hover:bg-amber-600 text-white font-bold py-2.5 rounded-lg transition text-sm">
+              Save Customer
+            </button>
+          </div>
+        </div>
+      </div>
+    <% end %>
 
     <!-- Customer detail panel -->
     <%= if @selected_customer do %>

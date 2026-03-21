@@ -13,6 +13,10 @@ defmodule LiquorWeb.Admin.DashboardLive do
   end
 
   defp load_stats(socket) do
+    monthly   = Orders.monthly_revenue_last_6()
+    by_status = Orders.orders_by_status()
+    top_prods = Orders.top_products(5)
+
     assign(socket,
       total_products:   Catalog.count_products(),
       total_categories: Catalog.count_categories(),
@@ -25,9 +29,16 @@ defmodule LiquorWeb.Admin.DashboardLive do
       paid_orders:      Orders.count_paid_orders(),
       recent_orders:    Orders.recent_orders(8),
       low_stock:        Catalog.low_stock_variants(5),
-      orders_by_status: Orders.orders_by_status(),
-      top_products:     Orders.top_products(5),
-      stock_value:      Catalog.total_stock_value()
+      orders_by_status: by_status,
+      top_products:     top_prods,
+      stock_value:      Catalog.total_stock_value(),
+      # chart data
+      revenue_chart_labels: Jason.encode!(Enum.map(monthly, & &1.month)),
+      revenue_chart_values: Jason.encode!(Enum.map(monthly, &Decimal.to_float(&1.revenue))),
+      status_chart_labels:  Jason.encode!(Map.keys(by_status)),
+      status_chart_values:  Jason.encode!(Map.values(by_status)),
+      top_products_labels:  Jason.encode!(Enum.map(top_prods, & &1.name)),
+      top_products_values:  Jason.encode!(Enum.map(top_prods, &Decimal.to_float(&1.revenue)))
     )
   end
 
@@ -72,6 +83,57 @@ defmodule LiquorWeb.Admin.DashboardLive do
         <.stat_card label="Customers"  value={@total_users}      href="/admin/customers"  color="emerald" />
         <.stat_card label="Orders"     value={@total_orders}     href="/admin/orders"     color="rose" />
         <.stat_card label="Paid"       value={@paid_orders}      href="/admin/invoices"   color="teal" />
+      </div>
+
+      <!-- Charts row -->
+      <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">
+        <!-- Revenue over time -->
+        <div class="lg:col-span-2 bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-gray-900">Monthly Revenue</h2>
+            <p class="text-xs text-gray-400 mt-0.5">Last 6 months · paid orders</p>
+          </div>
+          <div class="p-4 h-60">
+            <canvas
+              id="revenue-chart"
+              phx-hook="RevenueChart"
+              data-labels={@revenue_chart_labels}
+              data-values={@revenue_chart_values}
+            ></canvas>
+          </div>
+        </div>
+
+        <!-- Orders by status -->
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div class="px-5 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-gray-900">Orders by Status</h2>
+            <p class="text-xs text-gray-400 mt-0.5">All time</p>
+          </div>
+          <div class="p-4 h-60 flex items-center justify-center">
+            <canvas
+              id="status-chart"
+              phx-hook="StatusChart"
+              data-labels={@status_chart_labels}
+              data-values={@status_chart_values}
+            ></canvas>
+          </div>
+        </div>
+      </div>
+
+      <!-- Top products chart -->
+      <div class="bg-white border border-gray-200 rounded-xl overflow-hidden mb-6">
+        <div class="px-5 py-4 border-b border-gray-100">
+          <h2 class="font-bold text-gray-900">Top Products by Revenue</h2>
+          <p class="text-xs text-gray-400 mt-0.5">Paid orders only</p>
+        </div>
+        <div class="p-4 h-52">
+          <canvas
+            id="top-products-chart"
+            phx-hook="TopProductsChart"
+            data-labels={@top_products_labels}
+            data-values={@top_products_values}
+          ></canvas>
+        </div>
       </div>
 
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-6">

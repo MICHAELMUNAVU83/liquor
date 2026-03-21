@@ -9,8 +9,10 @@ defmodule LiquorWeb.ContactLive do
 
     {:ok,
      assign(socket,
-       current_page: "contact",
-       page_title: "Contact Us",
+       current_page:     "contact",
+       page_title:       "Contact Us",
+       page_description: "Get in touch with The Mint Liquor Store. Visit us at TRM Mall, Thika Road, Nairobi or call +254 700 123 456. Open 7 days a week.",
+       canonical_path:   "/contact",
        form: form,
        submitted: false
      )}

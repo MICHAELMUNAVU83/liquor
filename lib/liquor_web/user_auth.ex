@@ -58,7 +58,7 @@ defmodule LiquorWeb.UserAuth do
   def log_out_admin(conn) do
     conn
     |> renew_session()
-    |> redirect(to: ~p"/admin/login")
+    |> redirect(to: ~p"/")
   end
 
   defp renew_session(conn) do

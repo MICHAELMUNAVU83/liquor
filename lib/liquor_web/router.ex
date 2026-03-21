@@ -27,7 +27,12 @@ defmodule LiquorWeb.Router do
     live "/shop",    ShopLive
     live "/about",   AboutLive
     live "/contact", ContactLive
-    live "/cart",    CartLive
+    live "/cart",             CartLive
+    live "/checkout",         CheckoutLive, :index
+    live "/checkout/success", CheckoutLive, :success
+
+    get "/payment/callback", PaymentController, :callback
+    get "/sitemap.xml",      SitemapController, :index
   end
 
   # ---------------------------------------------------------------------------
@@ -55,10 +60,11 @@ defmodule LiquorWeb.Router do
       live "/brands",     BrandsLive,     :index
       live "/orders",     OrdersLive,     :index
       live "/sales",      SalesLive,      :index
-      live "/invoices",   InvoicesLive,   :index
+      live "/expenses",   ExpensesLive,   :index
       live "/customers",  CustomersLive,  :index
       live "/inventory",  InventoryLive,  :index
       live "/reports",    ReportsLive,    :index
+      live "/settings",   SettingsLive,   :index
     end
   end
 

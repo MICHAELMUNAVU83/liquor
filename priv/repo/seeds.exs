@@ -313,14 +313,14 @@ products =
 # ---------------------------------------------------------------------------
 
 Seeds.Helpers.upsert_user(%{
-  email:      "admin@corino.com",
-  password:   "admin1234",
+  email:      "admin@gmail.com",
+  password:   "password",
   first_name: "Admin",
   last_name:  "Corino",
   is_admin:   true
 })
 
-IO.puts("  ✓ Admin user: admin@corino.com / admin1234")
+IO.puts("  ✓ Admin user: admin@gmail.com / password")
 
 # ---------------------------------------------------------------------------
 # Sample customer + order (only if no orders exist yet)

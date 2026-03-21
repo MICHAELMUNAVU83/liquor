@@ -157,7 +157,7 @@ const CartDrawer = {
                 style="font-family:'Inter',sans-serif">KSh 0.00</span>
         </div>
         <p class="text-[11px] text-zinc-400" style="font-family:'Inter',sans-serif">
-          Free delivery within Nairobi on orders over KSh 10,000
+          The Mint 
         </p>
         <a href="/cart"
            class="flex items-center justify-center gap-2 w-full bg-orange-500 hover:bg-orange-600
@@ -367,6 +367,10 @@ export const CartSync = {
         return { ...(local || {}), variant_id: sv.variant_id, quantity: sv.quantity };
       });
       saveCart(updated);
+    });
+
+    this.handleEvent("cart:clear", () => {
+      saveCart([]);
     });
   }
 };

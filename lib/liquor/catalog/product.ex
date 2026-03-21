@@ -36,7 +36,8 @@ defmodule Liquor.Catalog.Product do
   end
 
   defp maybe_generate_slug(%Ecto.Changeset{} = cs) do
-    if get_field(cs, :slug) do
+    existing = get_field(cs, :slug)
+    if existing && existing != "" do
       cs
     else
       case get_change(cs, :name) do

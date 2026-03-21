@@ -9,36 +9,44 @@ defmodule LiquorWeb.Admin.ProductsLive do
     {:ok,
      socket
      |> assign(
-       page_title:       "Admin – Products",
-       active_tab:       "products",
-       search:           "",
-       category_id:      nil,
+       page_title: "Admin – Products",
+       active_tab: "products",
+       search: "",
+       category_id: nil,
        # product modal
-       show_modal:       false,
-       editing:          nil,
-       form:             nil,
+       show_modal: false,
+       editing: nil,
+       form: nil,
        # variants panel
        variants_product: nil,
-       variants:         [],
+       variants: [],
        # variant form
-       editing_variant:  nil,
-       variant_form:     nil,
+       editing_variant: nil,
+       variant_form: nil,
        show_variant_form: false
      )
-     |> load_data(),
-     layout: {LiquorWeb.Layouts, :admin}}
+     |> allow_upload(:product_image,
+       accept: ~w(.jpg .jpeg .png .webp .gif),
+       max_entries: 1,
+       max_file_size: 10_000_000
+     )
+     |> load_data(), layout: {LiquorWeb.Layouts, :admin}}
   end
 
   defp load_data(socket) do
     assign(socket,
-      products:   Catalog.list_products(search: socket.assigns.search, category_id: socket.assigns.category_id),
+      products:
+        Catalog.list_products(
+          search: socket.assigns.search,
+          category_id: socket.assigns.category_id
+        ),
       categories: Catalog.list_categories()
     )
   end
 
   defp reload_variants(socket) do
     case socket.assigns.variants_product do
-      nil     -> socket
+      nil -> socket
       product -> assign(socket, variants: Catalog.list_variants_for(product.id))
     end
   end
@@ -62,7 +70,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
 
   def handle_event("edit_product", %{"id" => id}, socket) do
     product = Catalog.get_product!(id)
-    form    = to_form(Catalog.change_product(product), as: :product)
+    form = to_form(Catalog.change_product(product), as: :product)
     {:noreply, assign(socket, show_modal: true, editing: product, form: form)}
   end
 
@@ -72,14 +80,27 @@ defmodule LiquorWeb.Admin.ProductsLive do
 
   def handle_event("validate_product", %{"product" => params}, socket) do
     product = socket.assigns.editing || %Product{}
-    form    = to_form(Catalog.change_product(product, params), as: :product)
+    form = to_form(Catalog.change_product(product, params), as: :product)
     {:noreply, assign(socket, form: form)}
   end
 
   def handle_event("save_product", %{"product" => params}, socket) do
+    uploaded_url =
+      consume_uploaded_entries(socket, :product_image, fn %{path: tmp_path}, entry ->
+        dest_dir = Application.app_dir(:liquor, "priv/static/uploads")
+        File.mkdir_p!(dest_dir)
+        ext = Path.extname(entry.client_name)
+        filename = "#{System.unique_integer([:positive, :monotonic])}#{ext}"
+        File.cp!(tmp_path, Path.join(dest_dir, filename))
+        {:ok, "/uploads/#{filename}"}
+      end)
+      |> List.first()
+
+    params = if uploaded_url, do: Map.put(params, "image_url", uploaded_url), else: params
+
     result =
       case socket.assigns.editing do
-        nil     -> Catalog.create_product(params)
+        nil -> Catalog.create_product(params)
         product -> Catalog.update_product(product, params)
       end
 
@@ -117,14 +138,15 @@ defmodule LiquorWeb.Admin.ProductsLive do
   # ── Variants panel events ───────────────────────────────────────────────────
 
   def handle_event("open_variants", %{"id" => id}, socket) do
-    product  = Catalog.get_product!(id)
+    product = Catalog.get_product!(id)
     variants = Catalog.list_variants_for(product.id)
+
     {:noreply,
      assign(socket,
-       variants_product:  product,
-       variants:          variants,
-       editing_variant:   nil,
-       variant_form:      nil,
+       variants_product: product,
+       variants: variants,
+       editing_variant: nil,
+       variant_form: nil,
        show_variant_form: false
      )}
   end
@@ -132,27 +154,32 @@ defmodule LiquorWeb.Admin.ProductsLive do
   def handle_event("close_variants", _params, socket) do
     {:noreply,
      assign(socket,
-       variants_product:  nil,
-       variants:          [],
-       editing_variant:   nil,
-       variant_form:      nil,
+       variants_product: nil,
+       variants: [],
+       editing_variant: nil,
+       variant_form: nil,
        show_variant_form: false
      )}
   end
 
   def handle_event("new_variant", _params, socket) do
     product = socket.assigns.variants_product
-    form    = to_form(
-      Catalog.change_variant(%ProductVariant{product_id: product.id}),
-      as: :variant
-    )
+
+    form =
+      to_form(
+        Catalog.change_variant(%ProductVariant{product_id: product.id}),
+        as: :variant
+      )
+
     {:noreply, assign(socket, show_variant_form: true, editing_variant: nil, variant_form: form)}
   end
 
   def handle_event("edit_variant", %{"id" => id}, socket) do
     variant = Catalog.get_variant!(id)
-    form    = to_form(Catalog.change_variant(variant), as: :variant)
-    {:noreply, assign(socket, show_variant_form: true, editing_variant: variant, variant_form: form)}
+    form = to_form(Catalog.change_variant(variant), as: :variant)
+
+    {:noreply,
+     assign(socket, show_variant_form: true, editing_variant: variant, variant_form: form)}
   end
 
   def handle_event("cancel_variant_form", _params, socket) do
@@ -160,18 +187,21 @@ defmodule LiquorWeb.Admin.ProductsLive do
   end
 
   def handle_event("validate_variant", %{"variant" => params}, socket) do
-    base = socket.assigns.editing_variant || %ProductVariant{product_id: socket.assigns.variants_product.id}
+    base =
+      socket.assigns.editing_variant ||
+        %ProductVariant{product_id: socket.assigns.variants_product.id}
+
     form = to_form(Catalog.change_variant(base, params), as: :variant)
     {:noreply, assign(socket, variant_form: form)}
   end
 
   def handle_event("save_variant", %{"variant" => params}, socket) do
     product = socket.assigns.variants_product
-    params  = Map.put(params, "product_id", to_string(product.id))
+    params = Map.put(params, "product_id", to_string(product.id))
 
     result =
       case socket.assigns.editing_variant do
-        nil     -> Catalog.create_variant(params)
+        nil -> Catalog.create_variant(params)
         variant -> Catalog.update_variant(variant, params)
       end
 
@@ -192,6 +222,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
   def handle_event("delete_variant", %{"id" => id}, socket) do
     variant = Catalog.get_variant!(id)
     {:ok, _} = Catalog.delete_variant(variant)
+
     {:noreply,
      socket
      |> put_flash(:info, "Variant deleted.")
@@ -214,6 +245,10 @@ defmodule LiquorWeb.Admin.ProductsLive do
      |> load_data()}
   end
 
+  def handle_event("cancel_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :product_image, ref)}
+  end
+
   # Ignore stray window keydown events that don't match any pattern
   def handle_event(_event, _params, socket), do: {:noreply, socket}
 
@@ -227,7 +262,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
       <div class="flex items-center justify-between mb-6 flex-wrap gap-3">
         <div>
           <h1 class="text-2xl font-black text-gray-900">Products</h1>
-          <p class="text-sm text-gray-500"><%= length(@products) %> products</p>
+          <p class="text-sm text-gray-500">{length(@products)} products</p>
         </div>
         <button
           phx-click="new_product"
@@ -236,8 +271,8 @@ defmodule LiquorWeb.Admin.ProductsLive do
           + New Product
         </button>
       </div>
-
-      <!-- Filters -->
+      
+    <!-- Filters -->
       <div class="flex gap-3 mb-6 flex-wrap">
         <form phx-change="search" class="flex-1 min-w-[200px]">
           <input
@@ -255,24 +290,38 @@ defmodule LiquorWeb.Admin.ProductsLive do
           >
             <option value="">All Categories</option>
             <%= for cat <- @categories do %>
-              <option value={cat.id} selected={@category_id == cat.id}><%= cat.name %></option>
+              <option value={cat.id} selected={@category_id == cat.id}>{cat.name}</option>
             <% end %>
           </select>
         </form>
       </div>
-
-      <!-- Table -->
+      
+    <!-- Table -->
       <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
         <table class="w-full text-sm">
           <thead class="bg-gray-50 border-b border-gray-200">
             <tr>
-              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Product</th>
-              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Category</th>
-              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Variants</th>
-              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Badge</th>
-              <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Featured</th>
-              <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Active</th>
-              <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Product
+              </th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Category
+              </th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Variants
+              </th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Badge
+              </th>
+              <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Featured
+              </th>
+              <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Active
+              </th>
+              <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody class="divide-y divide-gray-100">
@@ -285,19 +334,29 @@ defmodule LiquorWeb.Admin.ProductsLive do
                         <img src={p.image_url} class="w-full h-full object-cover" />
                       <% else %>
                         <div class="w-full h-full flex items-center justify-center text-gray-300">
-                          <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                          <svg
+                            class="w-5 h-5"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                            stroke-width="1.5"
+                          >
+                            <path
+                              stroke-linecap="round"
+                              stroke-linejoin="round"
+                              d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"
+                            />
                           </svg>
                         </div>
                       <% end %>
                     </div>
                     <div>
-                      <p class="font-semibold text-gray-900 leading-tight"><%= p.name %></p>
-                      <p class="text-xs text-gray-400 font-mono"><%= p.slug %></p>
+                      <p class="font-semibold text-gray-900 leading-tight">{p.name}</p>
+                      <p class="text-xs text-gray-400 font-mono">{p.slug}</p>
                     </div>
                   </div>
                 </td>
-                <td class="px-5 py-3 text-gray-600"><%= p.category.name %></td>
+                <td class="px-5 py-3 text-gray-600">{p.category.name}</td>
                 <td class="px-5 py-3">
                   <button
                     phx-click="open_variants"
@@ -306,22 +365,32 @@ defmodule LiquorWeb.Admin.ProductsLive do
                       "inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-lg border transition",
                       if(length(p.variants) > 0,
                         do: "bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100",
-                        else: "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100")
+                        else: "bg-gray-50 text-gray-500 border-gray-200 hover:bg-gray-100"
+                      )
                     ]}
                   >
-                    <svg class="w-3 h-3" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                      <path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14v14m0 0l-8-4V7"/>
+                    <svg
+                      class="w-3 h-3"
+                      fill="none"
+                      stroke="currentColor"
+                      stroke-width="2"
+                      viewBox="0 0 24 24"
+                    >
+                      <path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14v14m0 0l-8-4V7" />
                     </svg>
-                    <%= length(p.variants) %> variant<%= if length(p.variants) != 1, do: "s" %>
+                    {length(p.variants)} variant{if length(p.variants) != 1, do: "s"}
                   </button>
                 </td>
                 <td class="px-5 py-3">
                   <%= if p.badge do %>
                     <span class={[
                       "text-[9px] font-black uppercase tracking-wide px-2 py-0.5 rounded",
-                      if(p.badge == "best_seller", do: "bg-emerald-100 text-emerald-700", else: "bg-amber-100 text-amber-700")
+                      if(p.badge == "best_seller",
+                        do: "bg-emerald-100 text-emerald-700",
+                        else: "bg-amber-100 text-amber-700"
+                      )
                     ]}>
-                      <%= String.replace(p.badge, "_", " ") %>
+                      {String.replace(p.badge, "_", " ")}
                     </span>
                   <% else %>
                     <span class="text-gray-300">—</span>
@@ -330,12 +399,26 @@ defmodule LiquorWeb.Admin.ProductsLive do
                 <td class="px-5 py-3 text-center">
                   <button phx-click="toggle_featured" phx-value-id={p.id} class="cursor-pointer">
                     <%= if p.is_featured do %>
-                      <svg class="w-5 h-5 text-amber-500 mx-auto" fill="currentColor" viewBox="0 0 20 20">
-                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z"/>
+                      <svg
+                        class="w-5 h-5 text-amber-500 mx-auto"
+                        fill="currentColor"
+                        viewBox="0 0 20 20"
+                      >
+                        <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
                       </svg>
                     <% else %>
-                      <svg class="w-5 h-5 text-gray-300 mx-auto hover:text-amber-400 transition" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1.5">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+                      <svg
+                        class="w-5 h-5 text-gray-300 mx-auto hover:text-amber-400 transition"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="1.5"
+                      >
+                        <path
+                          stroke-linecap="round"
+                          stroke-linejoin="round"
+                          d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"
+                        />
                       </svg>
                     <% end %>
                   </button>
@@ -352,7 +435,8 @@ defmodule LiquorWeb.Admin.ProductsLive do
                     <span class={[
                       "inline-block h-4 w-4 transform rounded-full bg-white shadow transition duration-200",
                       if(p.is_active, do: "translate-x-4", else: "translate-x-0")
-                    ]}></span>
+                    ]}>
+                    </span>
                   </button>
                 </td>
                 <td class="px-5 py-3 text-right">
@@ -361,13 +445,17 @@ defmodule LiquorWeb.Admin.ProductsLive do
                       phx-click="edit_product"
                       phx-value-id={p.id}
                       class="text-xs font-semibold text-gray-600 hover:text-amber-600 transition px-2 py-1 border border-gray-200 rounded-lg hover:border-amber-400"
-                    >Edit</button>
+                    >
+                      Edit
+                    </button>
                     <button
                       phx-click="delete_product"
                       phx-value-id={p.id}
                       data-confirm={"Delete \"#{p.name}\"? This cannot be undone."}
                       class="text-xs font-semibold text-gray-400 hover:text-red-500 transition px-2 py-1 border border-gray-200 rounded-lg hover:border-red-300"
-                    >Delete</button>
+                    >
+                      Delete
+                    </button>
                   </div>
                 </td>
               </tr>
@@ -376,7 +464,12 @@ defmodule LiquorWeb.Admin.ProductsLive do
               <tr>
                 <td colspan="7" class="px-5 py-12 text-center text-sm text-gray-400">
                   No products found.
-                  <button phx-click="new_product" class="text-amber-600 font-semibold hover:underline ml-1">Add one?</button>
+                  <button
+                    phx-click="new_product"
+                    class="text-amber-600 font-semibold hover:underline ml-1"
+                  >
+                    Add one?
+                  </button>
                 </td>
               </tr>
             <% end %>
@@ -395,11 +488,17 @@ defmodule LiquorWeb.Admin.ProductsLive do
         >
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200 sticky top-0 bg-white">
             <h2 class="text-lg font-black text-gray-900">
-              <%= if @editing, do: "Edit Product", else: "New Product" %>
+              {if @editing, do: "Edit Product", else: "New Product"}
             </h2>
             <button phx-click="close_modal" class="text-gray-400 hover:text-gray-700 transition">
-              <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+              <svg
+                class="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+                stroke-width="2"
+              >
+                <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
               </svg>
             </button>
           </div>
@@ -407,16 +506,139 @@ defmodule LiquorWeb.Admin.ProductsLive do
           <form phx-change="validate_product" phx-submit="save_product" class="p-6 space-y-5">
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
               <.field form={@form} field={:name} label="Name *" type="text" />
-              <.field form={@form} field={:slug} label="Slug" type="text" placeholder="auto-generated" />
+              <.field
+                form={@form}
+                field={:slug}
+                label="Slug"
+                type="text"
+                placeholder="auto-generated"
+              />
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <.select_field form={@form} field={:category_id} label="Category *" options={Enum.map(@categories, &{&1.name, &1.id})} />
-              <.select_field form={@form} field={:brand_id} label="Brand" options={[{"— None —", ""}] ++ Enum.map(Catalog.list_brands(), &{&1.name, &1.id})} />
+              <.select_field
+                form={@form}
+                field={:category_id}
+                label="Category *"
+                options={Enum.map(@categories, &{&1.name, &1.id})}
+              />
+              <.select_field
+                form={@form}
+                field={:brand_id}
+                label="Brand"
+                options={[{"— None —", ""}] ++ Enum.map(Catalog.list_brands(), &{&1.name, &1.id})}
+              />
             </div>
-            <div class="grid grid-cols-1 sm:grid-cols-3 gap-5">
-              <.select_field form={@form} field={:badge} label="Badge" options={[{"— None —", ""}, {"Best Seller", "best_seller"}, {"Limited Edition", "limited_edition"}]} />
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <.select_field
+                form={@form}
+                field={:badge}
+                label="Badge"
+                options={[
+                  {"— None —", ""},
+                  {"Best Seller", "best_seller"},
+                  {"Limited Edition", "limited_edition"}
+                ]}
+              />
               <.field form={@form} field={:year} label="Year" type="number" placeholder="e.g. 2021" />
-              <.field form={@form} field={:image_url} label="Image URL" type="url" />
+            </div>
+            
+    <!-- Image upload -->
+            <div>
+              <label class="block text-sm font-semibold text-gray-700 mb-2">Product Image</label>
+              <div class="flex gap-4 items-start">
+                <!-- Image preview: new upload takes priority over current -->
+                <%= if entry = List.first(@uploads.product_image.entries) do %>
+                  <div class="shrink-0">
+                    <.live_img_preview
+                      entry={entry}
+                      class="w-20 h-20 object-cover rounded-lg border-2 border-amber-400"
+                    />
+                    <p class="text-[10px] text-amber-500 mt-1 text-center font-semibold">New</p>
+                  </div>
+                <% else %>
+                  <%= if img = (Phoenix.HTML.Form.input_value(@form, :image_url) || (@editing && @editing.image_url)) do %>
+                    <%= if img != "" do %>
+                      <div class="shrink-0">
+                        <img
+                          src={img}
+                          class="w-20 h-20 object-cover rounded-lg border border-gray-200"
+                        />
+                        <p class="text-[10px] text-gray-400 mt-1 text-center">Current</p>
+                      </div>
+                    <% end %>
+                  <% end %>
+                <% end %>
+                <div class="flex-1">
+                  <!-- Drop zone -->
+                  <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition">
+                    <svg
+                      class="w-8 h-8 text-gray-400 mb-2"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="1.5"
+                    >
+                      <path
+                        stroke-linecap="round"
+                        stroke-linejoin="round"
+                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
+                      />
+                    </svg>
+                    <span class="text-xs text-gray-500">Click to upload or drag & drop</span>
+                    <span class="text-[10px] text-gray-400 mt-0.5">JPG, PNG, WEBP up to 10MB</span>
+                    <.live_file_input upload={@uploads.product_image} />
+                  </label>
+                  <!-- Upload entries -->
+                  <%= for entry <- @uploads.product_image.entries do %>
+                    <div class="mt-2 flex items-center gap-3">
+                      <.live_img_preview
+                        entry={entry}
+                        class="w-12 h-12 object-cover rounded-lg border border-gray-200"
+                      />
+                      <div class="flex-1">
+                        <p class="text-xs font-medium text-gray-700 truncate">{entry.client_name}</p>
+                        <div class="mt-1 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
+                          <div
+                            class="h-full bg-amber-500 rounded-full transition-all"
+                            style={"width: #{entry.progress}%"}
+                          >
+                          </div>
+                        </div>
+                      </div>
+                      <button
+                        type="button"
+                        phx-click="cancel_upload"
+                        phx-value-ref={entry.ref}
+                        class="text-gray-400 hover:text-red-500 transition"
+                      >
+                        <svg
+                          class="w-4 h-4"
+                          fill="none"
+                          viewBox="0 0 24 24"
+                          stroke="currentColor"
+                          stroke-width="2"
+                        >
+                          <path
+                            stroke-linecap="round"
+                            stroke-linejoin="round"
+                            d="M6 18L18 6M6 6l12 12"
+                          />
+                        </svg>
+                      </button>
+                    </div>
+                  <% end %>
+                  <!-- URL fallback -->
+                  <div class="mt-2">
+                    <.field
+                      form={@form}
+                      field={:image_url}
+                      label=""
+                      type="text"
+                      placeholder="Or paste an image URL"
+                    />
+                  </div>
+                </div>
+              </div>
             </div>
             <.field form={@form} field={:description} label="Description" type="textarea" />
             <div class="flex gap-6">
@@ -426,8 +648,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
                   name="product[is_featured]"
                   checked={Phoenix.HTML.Form.input_value(@form, :is_featured)}
                   class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
-                />
-                Featured
+                /> Featured
               </label>
               <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
                 <input
@@ -435,8 +656,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
                   name="product[is_active]"
                   checked={Phoenix.HTML.Form.input_value(@form, :is_active) != false}
                   class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
-                />
-                Active
+                /> Active
               </label>
             </div>
             <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
@@ -444,11 +664,15 @@ defmodule LiquorWeb.Admin.ProductsLive do
                 type="button"
                 phx-click="close_modal"
                 class="px-4 py-2 text-sm font-semibold text-gray-600 hover:text-gray-900 border border-gray-200 rounded-lg transition"
-              >Cancel</button>
+              >
+                Cancel
+              </button>
               <button
                 type="submit"
                 class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-lg transition uppercase tracking-wide"
-              >Save Product</button>
+              >
+                Save Product
+              </button>
             </div>
           </form>
         </div>
@@ -468,7 +692,8 @@ defmodule LiquorWeb.Admin.ProductsLive do
             <div>
               <h2 class="text-lg font-black text-gray-900">Variants</h2>
               <p class="text-xs text-gray-400 mt-0.5">
-                <%= @variants_product.name %> · <%= length(@variants) %> variant<%= if length(@variants) != 1, do: "s" %>
+                {@variants_product.name} · {length(@variants)} variant{if length(@variants) != 1,
+                  do: "s"}
               </p>
             </div>
             <div class="flex items-center gap-3">
@@ -481,20 +706,26 @@ defmodule LiquorWeb.Admin.ProductsLive do
                 </button>
               <% end %>
               <button phx-click="close_variants" class="text-gray-400 hover:text-gray-700">
-                <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                <svg
+                  class="w-5 h-5"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                  stroke="currentColor"
+                  stroke-width="2"
+                >
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                 </svg>
               </button>
             </div>
           </div>
 
           <div class="overflow-y-auto flex-1 p-6 space-y-5">
-
-            <!-- ── Variant form ── -->
+            
+    <!-- ── Variant form ── -->
             <%= if @show_variant_form do %>
               <div class="bg-gray-50 border border-gray-200 rounded-xl p-5">
                 <h3 class="font-bold text-gray-800 mb-4">
-                  <%= if @editing_variant, do: "Edit Variant", else: "New Variant" %>
+                  {if @editing_variant, do: "Edit Variant", else: "New Variant"}
                 </h3>
                 <form phx-change="validate_variant" phx-submit="save_variant" class="space-y-4">
                   <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
@@ -508,11 +739,13 @@ defmodule LiquorWeb.Admin.ProductsLive do
                         class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                       />
                       <%= for {msg, _} <- Keyword.get_values(@variant_form.errors, :size) do %>
-                        <p class="text-xs text-red-500 mt-0.5"><%= msg %></p>
+                        <p class="text-xs text-red-500 mt-0.5">{msg}</p>
                       <% end %>
                     </div>
                     <div>
-                      <label class="block text-xs font-semibold text-gray-500 mb-1">Price ($) *</label>
+                      <label class="block text-xs font-semibold text-gray-500 mb-1">
+                        Price ($) *
+                      </label>
                       <input
                         type="number"
                         step="0.01"
@@ -522,11 +755,13 @@ defmodule LiquorWeb.Admin.ProductsLive do
                         class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                       />
                       <%= for {msg, _} <- Keyword.get_values(@variant_form.errors, :price) do %>
-                        <p class="text-xs text-red-500 mt-0.5"><%= msg %></p>
+                        <p class="text-xs text-red-500 mt-0.5">{msg}</p>
                       <% end %>
                     </div>
                     <div>
-                      <label class="block text-xs font-semibold text-gray-500 mb-1">Compare Price ($)</label>
+                      <label class="block text-xs font-semibold text-gray-500 mb-1">
+                        Compare Price ($)
+                      </label>
                       <input
                         type="number"
                         step="0.01"
@@ -559,11 +794,13 @@ defmodule LiquorWeb.Admin.ProductsLive do
                         class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm font-mono focus:outline-none focus:ring-2 focus:ring-amber-400"
                       />
                       <%= for {msg, _} <- Keyword.get_values(@variant_form.errors, :sku) do %>
-                        <p class="text-xs text-red-500 mt-0.5"><%= msg %></p>
+                        <p class="text-xs text-red-500 mt-0.5">{msg}</p>
                       <% end %>
                     </div>
                     <div>
-                      <label class="block text-xs font-semibold text-gray-500 mb-1">Stock Quantity</label>
+                      <label class="block text-xs font-semibold text-gray-500 mb-1">
+                        Stock Quantity
+                      </label>
                       <input
                         type="number"
                         min="0"
@@ -590,27 +827,39 @@ defmodule LiquorWeb.Admin.ProductsLive do
                       type="button"
                       phx-click="cancel_variant_form"
                       class="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-200 rounded-lg hover:bg-gray-50 transition"
-                    >Cancel</button>
+                    >
+                      Cancel
+                    </button>
                     <button
                       type="submit"
                       class="px-5 py-2 bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm rounded-lg transition"
-                    >Save Variant</button>
+                    >
+                      Save Variant
+                    </button>
                   </div>
                 </form>
               </div>
             <% end %>
-
-            <!-- ── Variants list ── -->
+            
+    <!-- ── Variants list ── -->
             <%= if @variants == [] and not @show_variant_form do %>
               <div class="py-12 text-center">
-                <svg class="w-10 h-10 text-gray-300 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                  <path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14v14m0 0l-8-4V7"/>
+                <svg
+                  class="w-10 h-10 text-gray-300 mx-auto mb-3"
+                  fill="none"
+                  stroke="currentColor"
+                  stroke-width="1.5"
+                  viewBox="0 0 24 24"
+                >
+                  <path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14v14m0 0l-8-4V7" />
                 </svg>
                 <p class="text-sm text-gray-400 mb-3">No variants yet for this product</p>
                 <button
                   phx-click="new_variant"
                   class="text-amber-600 font-semibold text-sm hover:underline"
-                >Add your first variant →</button>
+                >
+                  Add your first variant →
+                </button>
               </div>
             <% end %>
 
@@ -618,31 +867,54 @@ defmodule LiquorWeb.Admin.ProductsLive do
               <div class="space-y-2">
                 <!-- Header row -->
                 <div class="grid grid-cols-12 gap-2 px-4 py-2">
-                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">Size</p>
-                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">SKU</p>
-                  <p class="col-span-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">ABV</p>
-                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">Price</p>
-                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">Compare</p>
-                  <p class="col-span-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">Stock</p>
-                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 text-right">Actions</p>
+                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Size
+                  </p>
+                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    SKU
+                  </p>
+                  <p class="col-span-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    ABV
+                  </p>
+                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Price
+                  </p>
+                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Compare
+                  </p>
+                  <p class="col-span-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
+                    Stock
+                  </p>
+                  <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400 text-right">
+                    Actions
+                  </p>
                 </div>
 
                 <%= for v <- @variants do %>
                   <div class={[
                     "grid grid-cols-12 gap-2 items-center px-4 py-3 rounded-xl border transition",
-                    if(v.is_default, do: "bg-amber-50 border-amber-200", else: "bg-white border-gray-200 hover:border-gray-300")
+                    if(v.is_default,
+                      do: "bg-amber-50 border-amber-200",
+                      else: "bg-white border-gray-200 hover:border-gray-300"
+                    )
                   ]}>
                     <div class="col-span-2">
-                      <p class="text-sm font-bold text-gray-900"><%= v.size %></p>
+                      <p class="text-sm font-bold text-gray-900">{v.size}</p>
                       <%= if v.is_default do %>
-                        <span class="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">Default</span>
+                        <span class="text-[9px] font-black uppercase tracking-widest text-amber-600 bg-amber-100 px-1.5 py-0.5 rounded">
+                          Default
+                        </span>
                       <% end %>
                     </div>
-                    <p class="col-span-2 font-mono text-xs text-gray-400 truncate"><%= v.sku %></p>
-                    <p class="col-span-1 text-sm text-gray-600"><%= if v.abv, do: "#{v.abv}%", else: "—" %></p>
-                    <p class="col-span-2 text-sm font-bold text-gray-900">KSh <%= Decimal.round(v.price, 2) %></p>
+                    <p class="col-span-2 font-mono text-xs text-gray-400 truncate">{v.sku}</p>
+                    <p class="col-span-1 text-sm text-gray-600">
+                      {if v.abv, do: "#{v.abv}%", else: "—"}
+                    </p>
+                    <p class="col-span-2 text-sm font-bold text-gray-900">
+                      KSh {Decimal.round(v.price, 2)}
+                    </p>
                     <p class="col-span-2 text-sm text-gray-400">
-                      <%= if v.compare_price, do: "$#{Decimal.round(v.compare_price, 2)}", else: "—" %>
+                      {if v.compare_price, do: "$#{Decimal.round(v.compare_price, 2)}", else: "—"}
                     </p>
                     <p class={[
                       "col-span-1 text-sm font-bold",
@@ -652,7 +924,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
                         true -> "text-emerald-600"
                       end
                     ]}>
-                      <%= v.stock_quantity %>
+                      {v.stock_quantity}
                     </p>
                     <div class="col-span-2 flex items-center justify-end gap-2">
                       <%= if not v.is_default do %>
@@ -662,8 +934,14 @@ defmodule LiquorWeb.Admin.ProductsLive do
                           title="Set as default"
                           class="text-xs text-gray-400 hover:text-amber-500 transition"
                         >
-                          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
-                            <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z"/>
+                          <svg
+                            class="w-4 h-4"
+                            fill="none"
+                            stroke="currentColor"
+                            stroke-width="2"
+                            viewBox="0 0 24 24"
+                          >
+                            <path d="M11.48 3.499a.562.562 0 011.04 0l2.125 5.111a.563.563 0 00.475.345l5.518.442c.499.04.701.663.321.988l-4.204 3.602a.563.563 0 00-.182.557l1.285 5.385a.562.562 0 01-.84.61l-4.725-2.885a.563.563 0 00-.586 0L6.982 20.54a.562.562 0 01-.84-.61l1.285-5.386a.562.562 0 00-.182-.557l-4.204-3.602a.562.562 0 01.321-.988l5.518-.442a.563.563 0 00.475-.345L11.48 3.5z" />
                           </svg>
                         </button>
                       <% end %>
@@ -671,13 +949,17 @@ defmodule LiquorWeb.Admin.ProductsLive do
                         phx-click="edit_variant"
                         phx-value-id={v.id}
                         class="text-xs font-semibold text-gray-500 hover:text-amber-600 border border-gray-200 rounded px-2 py-0.5 hover:border-amber-400 transition"
-                      >Edit</button>
+                      >
+                        Edit
+                      </button>
                       <button
                         phx-click="delete_variant"
                         phx-value-id={v.id}
                         data-confirm="Delete this variant? This cannot be undone."
                         class="text-xs font-semibold text-gray-400 hover:text-red-500 border border-gray-200 rounded px-2 py-0.5 hover:border-red-300 transition"
-                      >Del</button>
+                      >
+                        Del
+                      </button>
                     </div>
                   </div>
                 <% end %>
@@ -698,7 +980,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
 
     ~H"""
     <div>
-      <label class="block text-xs font-semibold text-gray-600 mb-1"><%= @label %></label>
+      <label class="block text-xs font-semibold text-gray-600 mb-1">{@label}</label>
       <%= if @type == "textarea" do %>
         <textarea
           name={"product[#{@field}]"}
@@ -715,7 +997,7 @@ defmodule LiquorWeb.Admin.ProductsLive do
         />
       <% end %>
       <%= for {msg, _} <- Keyword.get_values(@form.errors || [], @field) do %>
-        <p class="text-xs text-red-500 mt-0.5"><%= msg %></p>
+        <p class="text-xs text-red-500 mt-0.5">{msg}</p>
       <% end %>
     </div>
     """
@@ -724,14 +1006,17 @@ defmodule LiquorWeb.Admin.ProductsLive do
   defp select_field(assigns) do
     ~H"""
     <div>
-      <label class="block text-xs font-semibold text-gray-600 mb-1"><%= @label %></label>
+      <label class="block text-xs font-semibold text-gray-600 mb-1">{@label}</label>
       <select
         name={"product[#{@field}]"}
         class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-amber-400"
       >
         <%= for {label, val} <- @options do %>
-          <option value={val} selected={to_string(Phoenix.HTML.Form.input_value(@form, @field)) == to_string(val)}>
-            <%= label %>
+          <option
+            value={val}
+            selected={to_string(Phoenix.HTML.Form.input_value(@form, @field)) == to_string(val)}
+          >
+            {label}
           </option>
         <% end %>
       </select>

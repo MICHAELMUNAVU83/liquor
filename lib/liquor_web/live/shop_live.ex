@@ -10,23 +10,26 @@ defmodule LiquorWeb.ShopLive do
   @impl true
   def mount(_params, _session, socket) do
     categories = Catalog.list_categories()
-    brands     = Catalog.list_brands()
+    brands = Catalog.list_brands()
 
     {:ok,
      socket
      |> assign(
-       current_page:       "shop",
-       page_title:         "Shop – Products",
-       sort:               "default",
-       per_page:           "#{@per_page}",
-       view:               "grid",
-       page:               1,
+       current_page: "shop",
+       page_title: "Shop – Wines, Spirits & Beer",
+       page_description:
+         "Shop premium wines, whisky, vodka, gin, rum, tequila, beer & more at The Mint Liquor Store Nairobi. Fast delivery across Nairobi.",
+       canonical_path: "/shop",
+       sort: "default",
+       per_page: "#{@per_page}",
+       view: "grid",
+       page: 1,
        selected_categories: [],
-       selected_brands:    [],
-       categories:         categories,
-       brands:             brands,
+       selected_brands: [],
+       categories: categories,
+       brands: brands,
        # map of product_id => selected variant_id for size picker
-       selected_variants:  %{}
+       selected_variants: %{}
      )
      |> assign_products()}
   end
@@ -52,14 +55,19 @@ defmodule LiquorWeb.ShopLive do
 
   def handle_event("toggle_category", %{"category" => cat}, socket) do
     selected = socket.assigns.selected_categories
-    updated  = if cat in selected, do: List.delete(selected, cat), else: [cat | selected]
+    updated = if cat in selected, do: List.delete(selected, cat), else: [cat | selected]
     {:noreply, socket |> assign(selected_categories: updated, page: 1) |> assign_products()}
   end
 
   def handle_event("toggle_brand", %{"brand" => brand}, socket) do
     selected = socket.assigns.selected_brands
-    updated  = if brand in selected, do: List.delete(selected, brand), else: [brand | selected]
+    updated = if brand in selected, do: List.delete(selected, brand), else: [brand | selected]
     {:noreply, socket |> assign(selected_brands: updated, page: 1) |> assign_products()}
+  end
+
+  def handle_event("clear_filters", _params, socket) do
+    {:noreply,
+     socket |> assign(selected_categories: [], selected_brands: [], page: 1) |> assign_products()}
   end
 
   # Customer picks a variant size on a product card
@@ -77,8 +85,13 @@ defmodule LiquorWeb.ShopLive do
   # ── Load / filter / sort / paginate ────────────────────────────────────────
 
   defp assign_products(socket) do
-    %{sort: sort, per_page: per_page_str, page: page,
-      selected_categories: cats, selected_brands: brands} = socket.assigns
+    %{
+      sort: sort,
+      per_page: per_page_str,
+      page: page,
+      selected_categories: cats,
+      selected_brands: brands
+    } = socket.assigns
 
     per_page = String.to_integer(per_page_str)
 
@@ -92,36 +105,40 @@ defmodule LiquorWeb.ShopLive do
 
     sorted =
       case sort do
-        "price_asc"  -> Enum.sort_by(filtered, &default_price/1)
+        "price_asc" -> Enum.sort_by(filtered, &default_price/1)
         "price_desc" -> Enum.sort_by(filtered, &default_price/1, :desc)
-        "newest"     -> Enum.sort_by(filtered, & &1.inserted_at, {:desc, DateTime})
-        _            -> filtered
+        "newest" -> Enum.sort_by(filtered, & &1.inserted_at, {:desc, DateTime})
+        _ -> filtered
       end
 
-    total       = length(sorted)
+    total = length(sorted)
     total_pages = max(ceil(total / per_page), 1)
-    paged       = sorted |> Enum.drop((page - 1) * per_page) |> Enum.take(per_page)
+    paged = sorted |> Enum.drop((page - 1) * per_page) |> Enum.take(per_page)
 
     assign(socket, products: paged, total_products: total, total_pages: total_pages)
   end
 
   defp filter_by_categories(products, []), do: products
+
   defp filter_by_categories(products, cats) do
     lower = Enum.map(cats, &String.downcase/1)
     Enum.filter(products, fn p -> String.downcase(p.category.name) in lower end)
   end
 
   defp filter_by_brands(products, []), do: products
+
   defp filter_by_brands(products, brands) do
     lower = Enum.map(brands, &String.downcase/1)
+
     Enum.filter(products, fn p ->
       p.brand && String.downcase(p.brand.name) in lower
     end)
   end
 
   defp default_price(%{variants: []}), do: Decimal.new("0")
+
   defp default_price(%{variants: variants}) do
-    default = Enum.find(variants, &(&1.is_default)) || hd(variants)
+    default = Enum.find(variants, & &1.is_default) || hd(variants)
     default.price
   end
 
@@ -138,8 +155,8 @@ defmodule LiquorWeb.ShopLive do
 
     <div class="max-w-screen-xl mx-auto px-4 py-8">
       <div class="flex gap-8 items-start">
-
-        <!-- Sidebar -->
+        
+    <!-- Sidebar -->
         <aside class="w-56 flex-shrink-0 hidden lg:block">
           <.live_filter_sidebar
             selected_categories={@selected_categories}
@@ -149,8 +166,8 @@ defmodule LiquorWeb.ShopLive do
             products={@products}
           />
         </aside>
-
-        <!-- Main content -->
+        
+    <!-- Main content -->
         <div class="flex-1 min-w-0">
           <.live_filter_toolbar
             sort={@sort}
@@ -161,8 +178,14 @@ defmodule LiquorWeb.ShopLive do
 
           <%= if @products == [] do %>
             <div class="py-24 text-center">
-              <svg class="w-12 h-12 text-zinc-300 mx-auto mb-3" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
-                <path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14v14m0 0l-8-4V7"/>
+              <svg
+                class="w-12 h-12 text-zinc-300 mx-auto mb-3"
+                fill="none"
+                stroke="currentColor"
+                stroke-width="1.5"
+                viewBox="0 0 24 24"
+              >
+                <path d="M20 7l-8-4-8 4m16 0v10l-8 4m0-14v14m0 0l-8-4V7" />
               </svg>
               <p class="text-zinc-500 font-semibold mb-1">No products found</p>
               <p class="text-zinc-400 text-sm">Try adjusting your filters</p>
@@ -184,11 +207,7 @@ defmodule LiquorWeb.ShopLive do
             </div>
           <% end %>
 
-          <.pagination
-            current_page={@page}
-            total_pages={@total_pages}
-            base_url="/shop"
-          />
+          <.pagination current_page={@page} total_pages={@total_pages} base_url="/shop" />
         </div>
       </div>
     </div>
@@ -201,27 +220,17 @@ defmodule LiquorWeb.ShopLive do
     ~H"""
     <div class="flex items-center justify-between py-4 border-b border-zinc-200 mb-6 gap-4 flex-wrap">
       <div class="flex items-center gap-3">
-        <span class="text-sm font-semibold text-zinc-500"><%= @total %> products</span>
+        <span class="text-sm font-semibold text-zinc-500">{@total} products</span>
         <div class="h-4 w-px bg-zinc-300"></div>
         <form phx-change="sort_changed">
           <select
             name="sort"
             class="text-sm border border-zinc-200 rounded px-3 py-1.5 text-zinc-700 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
           >
-            <option value="default"    selected={@sort == "default"}>Default sorting</option>
-            <option value="price_asc"  selected={@sort == "price_asc"}>Price: Low → High</option>
+            <option value="default" selected={@sort == "default"}>Default sorting</option>
+            <option value="price_asc" selected={@sort == "price_asc"}>Price: Low → High</option>
             <option value="price_desc" selected={@sort == "price_desc"}>Price: High → Low</option>
-            <option value="newest"     selected={@sort == "newest"}>Newest</option>
-          </select>
-        </form>
-        <form phx-change="per_page_changed">
-          <select
-            name="per_page"
-            class="text-sm border border-zinc-200 rounded px-3 py-1.5 text-zinc-700 bg-white focus:outline-none focus:ring-1 focus:ring-amber-400 cursor-pointer"
-          >
-            <%= for n <- ["6", "12", "24", "48"] do %>
-              <option value={n} selected={@per_page == n}>Show <%= n %></option>
-            <% end %>
+            <option value="newest" selected={@sort == "newest"}>Newest</option>
           </select>
         </form>
       </div>
@@ -229,20 +238,46 @@ defmodule LiquorWeb.ShopLive do
       <div class="flex items-center gap-1 ml-auto">
         <span class="text-xs text-zinc-400 mr-2 hidden sm:inline">View as</span>
         <button
-          phx-click="set_view" phx-value-view="grid"
-          class={["p-1.5 rounded transition", if(@view == "grid", do: "text-amber-600 bg-amber-50", else: "text-zinc-400 hover:text-zinc-700")]}
+          phx-click="set_view"
+          phx-value-view="grid"
+          class={[
+            "p-1.5 rounded transition",
+            if(@view == "grid",
+              do: "text-amber-600 bg-amber-50",
+              else: "text-zinc-400 hover:text-zinc-700"
+            )
+          ]}
         >
           <svg class="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
-            <rect x="3" y="3" width="7" height="7" rx="1"/><rect x="14" y="3" width="7" height="7" rx="1"/>
-            <rect x="3" y="14" width="7" height="7" rx="1"/><rect x="14" y="14" width="7" height="7" rx="1"/>
+            <rect x="3" y="3" width="7" height="7" rx="1" /><rect
+              x="14"
+              y="3"
+              width="7"
+              height="7"
+              rx="1"
+            />
+            <rect x="3" y="14" width="7" height="7" rx="1" /><rect
+              x="14"
+              y="14"
+              width="7"
+              height="7"
+              rx="1"
+            />
           </svg>
         </button>
         <button
-          phx-click="set_view" phx-value-view="list"
-          class={["p-1.5 rounded transition", if(@view == "list", do: "text-amber-600 bg-amber-50", else: "text-zinc-400 hover:text-zinc-700")]}
+          phx-click="set_view"
+          phx-value-view="list"
+          class={[
+            "p-1.5 rounded transition",
+            if(@view == "list",
+              do: "text-amber-600 bg-amber-50",
+              else: "text-zinc-400 hover:text-zinc-700"
+            )
+          ]}
         >
           <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16"/>
+            <path stroke-linecap="round" stroke-linejoin="round" d="M4 6h16M4 12h16M4 18h16" />
           </svg>
         </button>
       </div>
@@ -252,48 +287,110 @@ defmodule LiquorWeb.ShopLive do
 
   defp live_filter_sidebar(assigns) do
     ~H"""
-    <div class="space-y-6 text-sm text-zinc-700">
-
-      <!-- Categories -->
-      <div class="border-b border-zinc-200 pb-5">
-        <p class="font-bold text-sm text-zinc-900 mb-3">Product Categories</p>
-        <ul class="space-y-2">
+    <div class="space-y-5 text-sm">
+      
+    <!-- Header + Clear -->
+      <div class="flex items-center justify-between">
+        <p class="text-xs font-black uppercase tracking-widest text-zinc-400">Filters</p>
+        <%= if @selected_categories != [] or @selected_brands != [] do %>
+          <button
+            phx-click="clear_filters"
+            class="text-[11px] font-semibold text-orange-500 hover:text-orange-600 transition underline underline-offset-2"
+          >
+            Clear all
+          </button>
+        <% end %>
+      </div>
+      
+    <!-- Categories -->
+      <div class="border border-zinc-200 rounded-xl overflow-hidden">
+        <div class="bg-zinc-50 px-4 py-2.5 border-b border-zinc-200">
+          <p class="text-xs font-black uppercase tracking-widest text-zinc-500">Categories</p>
+        </div>
+        <ul class="divide-y divide-zinc-100">
           <%= for cat <- @categories do %>
+            <% active = cat.name in @selected_categories %>
             <li>
-              <label class="flex items-center justify-between gap-2 cursor-pointer group">
-                <span class="flex items-center gap-2">
-                  <input
-                    type="checkbox"
-                    checked={cat.name in @selected_categories}
-                    phx-click="toggle_category"
-                    phx-value-category={cat.name}
-                    class="w-4 h-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-400 cursor-pointer"
-                  />
-                  <span class="group-hover:text-amber-600 transition"><%= cat.name %></span>
+              <button
+                phx-click="toggle_category"
+                phx-value-category={cat.name}
+                class={[
+                  "w-full flex items-center gap-3 px-4 py-2.5 text-left transition",
+                  if(active, do: "bg-orange-50", else: "hover:bg-zinc-50")
+                ]}
+              >
+                <span class={[
+                  "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                  if(active, do: "bg-orange-500 border-orange-500", else: "border-zinc-300 bg-white")
+                ]}>
+                  <%= if active do %>
+                    <svg
+                      class="w-2.5 h-2.5 text-white"
+                      fill="none"
+                      viewBox="0 0 24 24"
+                      stroke="currentColor"
+                      stroke-width="3.5"
+                    >
+                      <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                    </svg>
+                  <% end %>
                 </span>
-              </label>
+                <span class={[
+                  "text-sm transition",
+                  if(active, do: "text-orange-700 font-semibold", else: "text-zinc-600")
+                ]}>
+                  {cat.name}
+                </span>
+              </button>
             </li>
           <% end %>
         </ul>
       </div>
-
-      <!-- Brands -->
+      
+    <!-- Brands -->
       <%= if @brands != [] do %>
-        <div class="border-b border-zinc-200 pb-5">
-          <p class="font-bold text-sm text-zinc-900 mb-3">Brands</p>
-          <ul class="space-y-2">
+        <div class="border border-zinc-200 rounded-xl overflow-hidden">
+          <div class="bg-zinc-50 px-4 py-2.5 border-b border-zinc-200">
+            <p class="text-xs font-black uppercase tracking-widest text-zinc-500">Brands</p>
+          </div>
+          <ul class="divide-y divide-zinc-100">
             <%= for brand <- @brands do %>
+              <% active = brand.name in @selected_brands %>
               <li>
-                <label class="flex items-center gap-2 cursor-pointer group">
-                  <input
-                    type="checkbox"
-                    checked={brand.name in @selected_brands}
-                    phx-click="toggle_brand"
-                    phx-value-brand={brand.name}
-                    class="w-4 h-4 rounded border-zinc-300 text-amber-500 focus:ring-amber-400 cursor-pointer"
-                  />
-                  <span class="group-hover:text-amber-600 transition"><%= brand.name %></span>
-                </label>
+                <button
+                  phx-click="toggle_brand"
+                  phx-value-brand={brand.name}
+                  class={[
+                    "w-full flex items-center gap-3 px-4 py-2.5 text-left transition",
+                    if(active, do: "bg-orange-50", else: "hover:bg-zinc-50")
+                  ]}
+                >
+                  <span class={[
+                    "w-4 h-4 rounded border-2 flex items-center justify-center shrink-0 transition-all",
+                    if(active,
+                      do: "bg-orange-500 border-orange-500",
+                      else: "border-zinc-300 bg-white"
+                    )
+                  ]}>
+                    <%= if active do %>
+                      <svg
+                        class="w-2.5 h-2.5 text-white"
+                        fill="none"
+                        viewBox="0 0 24 24"
+                        stroke="currentColor"
+                        stroke-width="3.5"
+                      >
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M5 13l4 4L19 7" />
+                      </svg>
+                    <% end %>
+                  </span>
+                  <span class={[
+                    "text-sm transition",
+                    if(active, do: "text-orange-700 font-semibold", else: "text-zinc-600")
+                  ]}>
+                    {brand.name}
+                  </span>
+                </button>
               </li>
             <% end %>
           </ul>
@@ -308,7 +405,7 @@ defmodule LiquorWeb.ShopLive do
   # updates the displayed price live without a page reload.
 
   defp product_card(assigns) do
-    product  = assigns.product
+    product = assigns.product
     variants = product.variants
 
     # Determine which variant is "active" on this card
@@ -316,26 +413,28 @@ defmodule LiquorWeb.ShopLive do
       cond do
         assigns.selected_variant_id ->
           Enum.find(variants, &(&1.id == assigns.selected_variant_id)) ||
-          Enum.find(variants, &(&1.is_default)) ||
-          List.first(variants)
+            Enum.find(variants, & &1.is_default) ||
+            List.first(variants)
+
         true ->
-          Enum.find(variants, &(&1.is_default)) || List.first(variants)
+          Enum.find(variants, & &1.is_default) || List.first(variants)
       end
 
-    assigns = assign(assigns,
-      variants:       variants,
-      active_variant: active_variant
-    )
+    assigns =
+      assign(assigns,
+        variants: variants,
+        active_variant: active_variant
+      )
 
     ~H"""
     <div class={[
       "bg-white border border-zinc-200 rounded-xl overflow-hidden hover:shadow-lg transition-shadow group",
-      if(@view == "list", do: "flex gap-4", else: "flex flex-col")
+      if(@view == "list", do: "flex", else: "flex flex-col")
     ]}>
       <!-- Image -->
       <div class={[
-        "relative overflow-hidden bg-zinc-50",
-        if(@view == "list", do: "w-32 h-32 shrink-0 rounded-l-xl", else: "aspect-[4/3]")
+        "relative overflow-hidden bg-zinc-50 shrink-0",
+        if(@view == "list", do: "w-48 self-stretch", else: "aspect-[4/3]")
       ]}>
         <%= if @product.image_url do %>
           <img
@@ -345,42 +444,51 @@ defmodule LiquorWeb.ShopLive do
           />
         <% else %>
           <div class="w-full h-full flex items-center justify-center text-zinc-300">
-            <svg class="w-10 h-10" fill="none" stroke="currentColor" stroke-width="1" viewBox="0 0 24 24">
-              <path d="M20 3H4l2 7H6a1 1 0 000 2h.06l1.42 5.68A2 2 0 009.42 19h5.16a2 2 0 001.94-1.32L18 12h.06A1 1 0 0018 10h-2l2-7z"/>
+            <svg
+              class="w-10 h-10"
+              fill="none"
+              stroke="currentColor"
+              stroke-width="1"
+              viewBox="0 0 24 24"
+            >
+              <path d="M20 3H4l2 7H6a1 1 0 000 2h.06l1.42 5.68A2 2 0 009.42 19h5.16a2 2 0 001.94-1.32L18 12h.06A1 1 0 0018 10h-2l2-7z" />
             </svg>
           </div>
         <% end %>
-
-        <!-- Badge -->
+        
+    <!-- Badge -->
         <%= if @product.badge do %>
           <span class={[
             "absolute top-2 left-2 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded",
-            if(@product.badge == "best_seller", do: "bg-emerald-500 text-white", else: "bg-orange-500 text-white")
+            if(@product.badge == "best_seller",
+              do: "bg-emerald-500 text-white",
+              else: "bg-orange-500 text-white"
+            )
           ]}>
-            <%= String.replace(@product.badge, "_", " ") %>
+            {String.replace(@product.badge, "_", " ")}
           </span>
         <% end %>
-
-        <!-- Stock badge -->
+        
+    <!-- Stock badge -->
         <%= if @active_variant && @active_variant.stock_quantity == 0 do %>
           <span class="absolute bottom-2 right-2 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded bg-red-500 text-white">
             Out of stock
           </span>
         <% end %>
       </div>
-
-      <!-- Info -->
+      
+    <!-- Info -->
       <div class="flex flex-col flex-1 p-4">
         <p class="text-[10px] font-bold uppercase tracking-widest text-amber-500 mb-1">
-          <%= @product.category.name %>
-          <%= if @product.brand, do: " · #{@product.brand.name}" %>
+          {@product.category.name}
+          {if @product.brand, do: " · #{@product.brand.name}"}
         </p>
 
         <h3 class="font-black text-zinc-900 leading-snug mb-2 line-clamp-2">
-          <%= @product.name %>
+          {@product.name}
         </h3>
-
-        <!-- Variant / size selector -->
+        
+    <!-- Variant / size selector -->
         <%= if length(@variants) > 1 do %>
           <div class="flex flex-wrap gap-1.5 mb-3">
             <%= for v <- @variants do %>
@@ -392,49 +500,55 @@ defmodule LiquorWeb.ShopLive do
                   "text-xs font-semibold px-2.5 py-1 rounded-lg border transition",
                   if(@active_variant && @active_variant.id == v.id,
                     do: "bg-zinc-900 text-white border-zinc-900",
-                    else: "border-zinc-200 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"),
-                  if(v.stock_quantity == 0, do: "opacity-50 line-through cursor-not-allowed", else: "")
+                    else: "border-zinc-200 text-zinc-600 hover:border-zinc-400 hover:text-zinc-900"
+                  ),
+                  if(v.stock_quantity == 0,
+                    do: "opacity-50 line-through cursor-not-allowed",
+                    else: ""
+                  )
                 ]}
               >
-                <%= v.size %>
+                {v.size}
               </button>
             <% end %>
           </div>
         <% end %>
-
-        <!-- Price row -->
+        
+    <!-- Price row -->
         <div class="flex items-baseline gap-2 mb-3">
           <%= if @active_variant do %>
             <span class="text-xl font-black text-zinc-900">
-              KSh <%= Decimal.round(@active_variant.price, 2) %>
+              KSh {Decimal.round(@active_variant.price, 2)}
             </span>
             <%= if @active_variant.compare_price &&
                    Decimal.compare(@active_variant.compare_price, @active_variant.price) == :gt do %>
               <span class="text-sm text-zinc-400 line-through">
-                KSh <%= Decimal.round(@active_variant.compare_price, 2) %>
+                KSh {Decimal.round(@active_variant.compare_price, 2)}
               </span>
-              <%
-                saving = Decimal.sub(@active_variant.compare_price, @active_variant.price)
-                pct    = Decimal.div(saving, @active_variant.compare_price) |> Decimal.mult(Decimal.new(100)) |> Decimal.round(0)
-              %>
+              <% saving = Decimal.sub(@active_variant.compare_price, @active_variant.price)
+
+              pct =
+                Decimal.div(saving, @active_variant.compare_price)
+                |> Decimal.mult(Decimal.new(100))
+                |> Decimal.round(0) %>
               <span class="text-xs font-bold text-emerald-600 bg-emerald-50 px-1.5 py-0.5 rounded">
-                −<%= pct %>%
+                −{pct}%
               </span>
             <% end %>
             <%= if @active_variant.abv do %>
-              <span class="text-xs text-zinc-400 ml-auto"><%= @active_variant.abv %>% ABV</span>
+              <span class="text-xs text-zinc-400 ml-auto">{@active_variant.abv}% ABV</span>
             <% end %>
           <% else %>
             <span class="text-sm text-zinc-400">No variants</span>
           <% end %>
         </div>
-
-        <!-- Single variant label (when only one size) -->
+        
+    <!-- Single variant label (when only one size) -->
         <%= if length(@variants) == 1 && @active_variant do %>
-          <p class="text-xs text-zinc-400 -mt-2 mb-3"><%= @active_variant.size %></p>
+          <p class="text-xs text-zinc-400 -mt-2 mb-3">{@active_variant.size}</p>
         <% end %>
-
-        <!-- Add to cart -->
+        
+    <!-- Add to cart -->
         <div class="mt-auto">
           <%= if @active_variant && @active_variant.stock_quantity > 0 do %>
             <button
@@ -449,7 +563,10 @@ defmodule LiquorWeb.ShopLive do
               Add to Cart
             </button>
           <% else %>
-            <button disabled class="w-full bg-zinc-200 text-zinc-400 text-xs font-black uppercase tracking-widest py-2.5 rounded-lg cursor-not-allowed">
+            <button
+              disabled
+              class="w-full bg-zinc-200 text-zinc-400 text-xs font-black uppercase tracking-widest py-2.5 rounded-lg cursor-not-allowed"
+            >
               Out of Stock
             </button>
           <% end %>

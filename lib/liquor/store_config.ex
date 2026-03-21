@@ -4,6 +4,7 @@ defmodule Liquor.StoreConfig do
   Update the values here and they propagate everywhere on the site.
   """
 
+  def site_url,          do: "https://www.themint.co.ke"
   def name,              do: "The Mint Liquor Store"
   def short_name,        do: "The Mint"
   def tagline,           do: "Liquor Store"

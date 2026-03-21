@@ -4,11 +4,21 @@ defmodule LiquorWeb.HomeLive do
   import LiquorWeb.HomeComponents
 
   alias Liquor.Catalog
+  alias Liquor.Settings
 
   @impl true
   def mount(_params, _session, socket) do
     all_active   = Catalog.list_products(active: true)
-    highlights   = Enum.take(all_active, 5)
+
+    featured_ids_str = Settings.get("homepage_featured_ids", "")
+    highlights =
+      if featured_ids_str != "" do
+        ids = featured_ids_str |> String.split(",", trim: true) |> Enum.map(&String.to_integer/1)
+        Enum.filter(all_active, fn p -> p.id in ids end)
+        |> Enum.sort_by(fn p -> Enum.find_index(ids, &(&1 == p.id)) end)
+      else
+        Enum.take(all_active, 5)
+      end
 
     best_sellers =
       all_active
@@ -26,17 +36,35 @@ defmodule LiquorWeb.HomeLive do
     categories = Catalog.list_categories()
     brands     = Catalog.list_brands()
 
+    s = Settings.all()
+
     {:ok,
      socket
      |> assign(
        current_page:      "home",
        page_title:        "Home",
+       page_description:  "The Mint Liquor Store – Nairobi's premier online liquor shop. Browse hundreds of wines, spirits, whisky, vodka, gin & craft beers. Free delivery over KSh 10,000.",
+       canonical_path:    "/",
        highlights:        highlights,
        best_sellers:      best_sellers,
        featured_products: featured_products,
        categories:        categories,
        brands:            brands,
-       selected_variants: %{}
+       selected_variants: %{},
+       hero_main_label:    s["hero_main_label"],
+       hero_main_title:    s["hero_main_title"],
+       hero_main_price:    s["hero_main_price"],
+       hero_main_image:    s["hero_main_image"],
+       hero_main_link:     s["hero_main_link"],
+       hero_tile1_label:   s["hero_tile1_label"],
+       hero_tile1_title:   s["hero_tile1_title"],
+       hero_tile1_subtitle: s["hero_tile1_subtitle"],
+       hero_tile1_image:   s["hero_tile1_image"],
+       hero_tile1_link:    s["hero_tile1_link"],
+       hero_tile2_title:   s["hero_tile2_title"],
+       hero_tile2_price:   s["hero_tile2_price"],
+       hero_tile2_image:   s["hero_tile2_image"],
+       hero_tile2_link:    s["hero_tile2_link"]
      )}
   end
 
@@ -67,7 +95,22 @@ defmodule LiquorWeb.HomeLive do
   @impl true
   def render(assigns) do
     ~H"""
-    <.hero_section />
+    <.hero_section
+      main_label={@hero_main_label}
+      main_title={@hero_main_title}
+      main_price={@hero_main_price}
+      main_image={@hero_main_image}
+      main_link={@hero_main_link}
+      tile1_label={@hero_tile1_label}
+      tile1_title={@hero_tile1_title}
+      tile1_subtitle={@hero_tile1_subtitle}
+      tile1_image={@hero_tile1_image}
+      tile1_link={@hero_tile1_link}
+      tile2_title={@hero_tile2_title}
+      tile2_price={@hero_tile2_price}
+      tile2_image={@hero_tile2_image}
+      tile2_link={@hero_tile2_link}
+    />
 
     <!-- ── Today's Highlights ──────────────────────────────────────── -->
     <section class="max-w-screen-xl mx-auto px-4 py-10">
@@ -83,7 +126,7 @@ defmodule LiquorWeb.HomeLive do
       <%= if @highlights == [] do %>
         <p class="text-sm text-zinc-400 text-center py-10">No products yet — add some in the admin.</p>
       <% else %>
-        <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
+        <div class="grid grid-cols-1 sm:grid-cols-3 lg:grid-cols-5 gap-4">
           <%= for product <- @highlights do %>
             <.live_product_card
               product={product}
@@ -96,7 +139,6 @@ defmodule LiquorWeb.HomeLive do
     </section>
 
     <.popular_category categories={@categories} brands={@brands} />
-    <.shop_by_spirits categories={@categories} />
 
     <!-- ── Best Sellers ────────────────────────────────────────────── -->
     <section class="max-w-screen-xl mx-auto px-4 py-10 border-t border-zinc-100">
@@ -112,7 +154,7 @@ defmodule LiquorWeb.HomeLive do
       <%= if @best_sellers == [] do %>
         <p class="text-sm text-zinc-400 text-center py-10">No products yet.</p>
       <% else %>
-        <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 lg:grid-cols-4 gap-4">
           <%= for product <- @best_sellers do %>
             <.live_product_card
               product={product}

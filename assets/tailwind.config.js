@@ -60,6 +60,15 @@ module.exports = {
           950: "#4C3800",
         },
       },
+      keyframes: {
+        marquee: {
+          "0%":   { transform: "translateX(0%)" },
+          "100%": { transform: "translateX(-50%)" },
+        },
+      },
+      animation: {
+        marquee: "marquee 30s linear infinite",
+      },
       fontFamily: {
         sans:    ["Inter", "ui-sans-serif", "system-ui", "-apple-system", "sans-serif"],
         display: ['"Playfair Display"', "Georgia", "Cambria", "serif"],

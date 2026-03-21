@@ -73,11 +73,13 @@ defmodule Liquor.Paystack do
   end
 
   def callback_url do
-    base = "https://summertidesfest.com"
+    base = Liquor.Settings.get("site_url") || "https://www.themint.co.ke"
     "#{base}/payment/callback"
   end
 
   defp api_key do
-    "sk_test_7267bf7b9b38cd9798c6328f7e0b3cc5a264f4aa"
+    Liquor.Settings.get("paystack_secret_key") ||
+      System.get_env("PAYSTACK_SECRET_KEY") ||
+      "sk_test_7267bf7b9b38cd9798c6328f7e0b3cc5a264f4aa"
   end
 end

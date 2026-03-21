@@ -20,6 +20,8 @@ defmodule Liquor.Orders.Order do
     field :payment_method,   :string
     field :payment_reference,:string
     field :payment_status,   :string, default: "unpaid"
+    field :customer_email,   :string
+    field :customer_phone,   :string
     field :notes,            :string
 
     belongs_to :user,  Liquor.Accounts.User
@@ -33,7 +35,8 @@ defmodule Liquor.Orders.Order do
     |> cast(attrs, [:user_id, :status, :total_amount, :shipping_amount, :discount_amount,
                     :shipping_name, :shipping_line1, :shipping_line2, :shipping_city,
                     :shipping_state, :shipping_zip, :shipping_country,
-                    :payment_method, :payment_reference, :payment_status, :notes])
+                    :payment_method, :payment_reference, :payment_status,
+                    :customer_email, :customer_phone, :notes])
     |> validate_required([:total_amount, :status])
     |> validate_inclusion(:status, @statuses)
     |> validate_inclusion(:payment_status, @payment_statuses)

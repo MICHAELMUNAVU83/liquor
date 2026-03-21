@@ -2,6 +2,7 @@ defmodule LiquorWeb.Admin.InventoryLive do
   use LiquorWeb, :live_view
 
   alias Liquor.Catalog
+  alias Liquor.Expenses
 
   @impl true
   def mount(_params, _session, socket) do
@@ -13,7 +14,8 @@ defmodule LiquorWeb.Admin.InventoryLive do
        search:         "",
        low_stock_only: false,
        editing_id:     nil,
-       edit_qty:       ""
+       edit_qty:       "",
+       expense_modal:  nil
      )
      |> load_variants(),
      layout: {LiquorWeb.Layouts, :admin}}
@@ -52,15 +54,30 @@ defmodule LiquorWeb.Admin.InventoryLive do
   end
 
   def handle_event("save_stock", %{"id" => id}, socket) do
-    id_int = String.to_integer(id)
+    id_int  = String.to_integer(id)
     new_qty = socket.assigns.edit_qty |> String.to_integer() |> max(0)
     variant = Catalog.get_variant!(id_int)
+    old_qty = variant.stock_quantity
 
     case Catalog.update_variant(variant, %{stock_quantity: new_qty}) do
       {:ok, _} ->
+        added = new_qty - old_qty
+
+        socket =
+          if added > 0 do
+            assign(socket,
+              expense_modal: %{
+                variant: variant,
+                qty_added: added,
+                unit_cost: ""
+              }
+            )
+          else
+            socket |> put_flash(:info, "Stock updated for #{variant.sku}.")
+          end
+
         {:noreply,
          socket
-         |> put_flash(:info, "Stock updated for #{variant.sku}.")
          |> assign(editing_id: nil, edit_qty: "")
          |> load_variants()}
 
@@ -70,16 +87,70 @@ defmodule LiquorWeb.Admin.InventoryLive do
   end
 
   def handle_event("adjust_stock", %{"id" => id, "delta" => delta}, socket) do
-    id_int   = String.to_integer(id)
+    id_int    = String.to_integer(id)
     delta_int = String.to_integer(delta)
-    variant  = Catalog.get_variant!(id_int)
+    variant   = Catalog.get_variant!(id_int)
 
     case Catalog.adjust_stock(variant, delta_int) do
       {:ok, _} ->
-        {:noreply, socket |> put_flash(:info, "Stock adjusted.") |> load_variants()}
+        socket =
+          if delta_int > 0 do
+            assign(socket,
+              expense_modal: %{
+                variant: variant,
+                qty_added: delta_int,
+                unit_cost: ""
+              }
+            )
+          else
+            put_flash(socket, :info, "Stock adjusted.")
+          end
+
+        {:noreply, socket |> load_variants()}
+
       {:error, _} ->
         {:noreply, put_flash(socket, :error, "Failed to adjust stock.")}
     end
+  end
+
+  def handle_event("set_expense_unit_cost", %{"unit_cost" => cost}, socket) do
+    modal = %{socket.assigns.expense_modal | unit_cost: cost}
+    {:noreply, assign(socket, expense_modal: modal)}
+  end
+
+  def handle_event("save_expense", _params, socket) do
+    %{variant: variant, qty_added: qty, unit_cost: cost_str} = socket.assigns.expense_modal
+
+    with {unit_cost, _} <- Decimal.parse(cost_str),
+         true <- Decimal.compare(unit_cost, Decimal.new("0")) == :gt do
+      total = Decimal.mult(unit_cost, Decimal.new(qty))
+
+      Expenses.create_expense(%{
+        description:  "Stock restock – #{variant.product.name} (#{variant.size})",
+        category:     "stock_restock",
+        amount:       total,
+        expense_date: Date.utc_today(),
+        product_name: variant.product.name,
+        variant_sku:  variant.sku,
+        quantity:     qty,
+        unit_cost:    unit_cost
+      })
+
+      {:noreply,
+       socket
+       |> put_flash(:info, "Stock updated and expense of KSh #{Decimal.round(total, 2)} recorded.")
+       |> assign(expense_modal: nil)}
+    else
+      _ ->
+        {:noreply, put_flash(socket, :error, "Please enter a valid unit cost.")}
+    end
+  end
+
+  def handle_event("skip_expense", _params, socket) do
+    {:noreply,
+     socket
+     |> put_flash(:info, "Stock updated. No expense recorded.")
+     |> assign(expense_modal: nil)}
   end
 
   @impl true
@@ -266,6 +337,58 @@ defmodule LiquorWeb.Admin.InventoryLive do
         </table>
       </div>
     </div>
+
+    <!-- Expense modal (shown after adding stock) -->
+    <%= if @expense_modal do %>
+      <div class="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+          <div class="px-6 py-4 border-b border-gray-200">
+            <h2 class="text-lg font-black text-gray-900">Record Stock Expense</h2>
+            <p class="text-sm text-gray-500 mt-0.5">
+              You added <span class="font-bold text-gray-800"><%= @expense_modal.qty_added %> units</span>
+              of <span class="font-bold text-gray-800"><%= @expense_modal.variant.product.name %> (<%= @expense_modal.variant.size %>)</span>.
+              Enter the cost per unit to log this as an expense.
+            </p>
+          </div>
+          <div class="p-6 space-y-4">
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Cost per unit (KSh)</label>
+              <input
+                type="number"
+                step="0.01"
+                min="0"
+                value={@expense_modal.unit_cost}
+                phx-keyup="set_expense_unit_cost"
+                name="unit_cost"
+                placeholder="0.00"
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+              <%= if @expense_modal.unit_cost != "" do %>
+                <% total = case Decimal.parse(@expense_modal.unit_cost) do
+                  {v, _} -> Decimal.mult(v, Decimal.new(@expense_modal.qty_added))
+                  _ -> nil
+                end %>
+                <%= if total && Decimal.compare(total, Decimal.new("0")) == :gt do %>
+                  <p class="text-sm text-gray-500 mt-1">
+                    Total expense: <span class="font-bold text-gray-800">KSh <%= Decimal.round(total, 2) %></span>
+                  </p>
+                <% end %>
+              <% end %>
+            </div>
+            <div class="flex justify-end gap-3 pt-1">
+              <button phx-click="skip_expense"
+                class="px-4 py-2 text-sm font-semibold text-gray-500 border border-gray-200 rounded-lg hover:bg-gray-50 transition">
+                Skip
+              </button>
+              <button phx-click="save_expense"
+                class="px-5 py-2 text-sm font-bold bg-amber-500 text-white rounded-lg hover:bg-amber-600 transition">
+                Save Expense
+              </button>
+            </div>
+          </div>
+        </div>
+      </div>
+    <% end %>
     """
   end
 end

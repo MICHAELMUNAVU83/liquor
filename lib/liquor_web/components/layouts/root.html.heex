@@ -4,16 +4,121 @@
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1" />
     <meta name="csrf-token" content={get_csrf_token()} />
-    <.live_title default="The Mint Liquor Store" suffix=" · The Mint">
+
+    <% cfg = Liquor.StoreConfig
+    site_url = cfg.site_url()
+    store_name = cfg.name()
+
+    default_desc =
+      "#{store_name} – Premium wines, spirits & beers delivered in Nairobi. Shop whisky, vodka, gin, rum, tequila & more at TRM Mall, Thika Road."
+
+    description = assigns[:page_description] || default_desc
+    og_image = assigns[:page_image] || "#{site_url}/images/logo.png"
+    canonical = "#{site_url}#{assigns[:canonical_path] || "/"}"
+
+    page_title_text =
+      case assigns[:page_title] do
+        nil -> store_name
+        t -> "#{t} · The Mint"
+      end %>
+    
+<!-- ── Primary meta ───────────────────────────────────────────────── -->
+    <.live_title default={store_name} suffix=" · The Mint">
       {assigns[:page_title]}
     </.live_title>
-    <!-- Google Fonts: Playfair Display (luxury serif) + Inter (clean sans) -->
+    <meta name="description" content={description} />
+    <meta
+      name="keywords"
+      content="liquor store nairobi, wine delivery nairobi, whisky kenya, spirits kenya, beer nairobi, the mint liquor store, TRM mall, online liquor shop kenya"
+    />
+    <meta name="author" content={store_name} />
+    <meta name="robots" content="index, follow" />
+    <link rel="canonical" href={canonical} />
+    <meta name="theme-color" content="#f59e0b" />
+    
+<!-- ── Favicons ───────────────────────────────────────────────────── -->
+    <link rel="icon" type="image/png" sizes="32x32" href="/images/logo.png" />
+    <link rel="icon" type="image/png" sizes="16x16" href="/images/logo.png" />
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon.png" />
+    <meta name="msapplication-TileImage" content="/images/logo.png" />
+    <meta name="application-name" content={cfg.short_name()} />
+    <meta name="msapplication-TileColor" content="#f59e0b" />
+    
+<!-- ── Open Graph ─────────────────────────────────────────────────── -->
+    <meta property="og:type" content="website" />
+    <meta property="og:site_name" content={store_name} />
+    <meta property="og:title" content={page_title_text} />
+    <meta property="og:description" content={description} />
+    <meta property="og:url" content={canonical} />
+    <meta property="og:image" content={og_image} />
+    <meta property="og:image:alt" content={"#{store_name} logo"} />
+    <meta property="og:locale" content="en_KE" />
+    
+<!-- ── Twitter / X Card ──────────────────────────────────────────── -->
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={page_title_text} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={og_image} />
+    
+<!-- ── JSON-LD: LocalBusiness ────────────────────────────────────── -->
+    <script type="application/ld+json">
+      {
+        "@context": "https://schema.org",
+        "@type": "LiquorStore",
+        "name": "<%= store_name %>",
+        "url": "<%= site_url %>",
+        "logo": "<%= site_url %>/images/logo.png",
+        "image": "<%= site_url %>/images/logo.png",
+        "description": "<%= default_desc %>",
+        "telephone": "<%= cfg.phone() %>",
+        "email": "<%= cfg.email() %>",
+        "address": {
+          "@type": "PostalAddress",
+          "streetAddress": "<%= cfg.hq_address() %>",
+          "addressLocality": "Nairobi",
+          "addressCountry": "KE"
+        },
+        "geo": {
+          "@type": "GeoCoordinates",
+          "latitude": "-1.2195",
+          "longitude": "36.8878"
+        },
+        "openingHoursSpecification": [
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+            "opens": "09:00",
+            "closes": "21:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Saturday"],
+            "opens": "09:00",
+            "closes": "22:00"
+          },
+          {
+            "@type": "OpeningHoursSpecification",
+            "dayOfWeek": ["Sunday"],
+            "opens": "10:00",
+            "closes": "21:00"
+          }
+        ],
+        "priceRange": "KSh",
+        "currenciesAccepted": "KES",
+        "paymentAccepted": "Cash, Credit Card, M-Pesa",
+        "servesCuisine": "Wines, Spirits, Beer"
+      }
+    </script>
+    
+<!-- ── Fonts ──────────────────────────────────────────────────────── -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link
       href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;0,900;1,400;1,600&display=swap"
       rel="stylesheet"
     />
+    
+<!-- ── Assets ─────────────────────────────────────────────────────── -->
     <link phx-track-static rel="stylesheet" href={~p"/assets/app.css"} />
     <script defer phx-track-static type="text/javascript" src={~p"/assets/app.js"}>
     </script>

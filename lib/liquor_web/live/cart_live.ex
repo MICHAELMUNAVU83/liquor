@@ -345,7 +345,7 @@ defmodule LiquorWeb.CartLive do
                             phx-blur="set_qty"
                             phx-value-id={item.variant_id}
                             name="qty"
-                            class="w-10 h-8 text-center text-sm font-semibold text-zinc-900 border-x border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-400 font-sans"
+                            class="w-10 h-8 text-center text-sm font-semibold text-zinc-900 border-x border-zinc-200 focus:outline-none focus:ring-1 focus:ring-amber-400 font-sans [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                           />
                           <button
                             phx-click="inc_qty"

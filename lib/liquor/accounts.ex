@@ -29,6 +29,7 @@ defmodule Liquor.Accounts do
   def get_user_by_email(email), do: Repo.get_by(User, email: email)
 
   def create_user(attrs), do: %User{} |> User.changeset(attrs) |> Repo.insert()
+  def create_customer(attrs), do: %User{} |> User.customer_changeset(attrs) |> Repo.insert()
   def update_user(%User{} = u, attrs), do: u |> User.admin_changeset(attrs) |> Repo.update()
   def delete_user(%User{} = u), do: Repo.delete(u)
   def change_user(%User{} = u, attrs \\ %{}), do: User.changeset(u, attrs)

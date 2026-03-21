@@ -3,6 +3,7 @@ import { Socket } from "phoenix"
 import { LiveSocket } from "phoenix_live_view"
 import topbar from "../vendor/topbar"
 import { CartSync } from "./cart"
+import { RevenueChart, StatusChart, TopProductsChart } from "./charts"
 
 // ── LiveSocket ────────────────────────────────────────────────────
 
@@ -13,6 +14,9 @@ let liveSocket = new LiveSocket("/live", Socket, {
   params: { _csrf_token: csrfToken },
   hooks: {
     CartSync,
+    RevenueChart,
+    StatusChart,
+    TopProductsChart,
   }
 })
 
