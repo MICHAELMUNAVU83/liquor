@@ -385,7 +385,7 @@ Seeds.Helpers.upsert_user(%{
   email: "admin@gmail.com",
   password: "password",
   first_name: "Admin",
-  last_name: "Corino",
+  last_name: "User",
   is_admin: true
 })
 
