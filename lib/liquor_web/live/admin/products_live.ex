@@ -96,12 +96,13 @@ defmodule LiquorWeb.Admin.ProductsLive do
       end)
       |> List.first()
 
+    IO.inspect(uploaded_url, label: "Uploaded URL")
     params = if uploaded_url, do: Map.put(params, "image_url", uploaded_url), else: params
 
     result =
       case socket.assigns.editing do
-        nil -> Catalog.create_product(params)
-        product -> Catalog.update_product(product, params)
+        nil -> IO.inspect(Catalog.create_product(params))
+        product -> IO.inspect(Catalog.update_product(product, params))
       end
 
     case result do
@@ -545,115 +546,87 @@ defmodule LiquorWeb.Admin.ProductsLive do
     <!-- Image upload -->
             <div>
               <label class="block text-sm font-semibold text-gray-700 mb-2">Product Image</label>
-              <div class="flex gap-4 items-start">
-                <!-- Image preview: new upload takes priority over current -->
-                <%= if entry = List.first(@uploads.product_image.entries) do %>
-                  <div class="shrink-0">
-                    <.live_img_preview
-                      entry={entry}
-                      class="w-20 h-20 object-cover rounded-lg border-2 border-amber-400"
+              
+    <!-- Current/Existing Image Preview -->
+              <%= if @uploads.product_image.entries == [] do %>
+                <%= if @editing && @editing.image_url && @editing.image_url != "" do %>
+                  <div class="mb-2 flex items-center gap-3 p-2 bg-gray-50 rounded-lg border border-gray-200">
+                    <img
+                      src={@editing.image_url}
+                      class="w-16 h-16 object-cover rounded-lg border border-gray-200"
                     />
-                    <p class="text-[10px] text-amber-500 mt-1 text-center font-semibold">New</p>
-                  </div>
-                <% else %>
-                  <%= if img = (Phoenix.HTML.Form.input_value(@form, :image_url) || (@editing && @editing.image_url)) do %>
-                    <%= if img != "" do %>
-                      <div class="shrink-0">
-                        <img
-                          src={img}
-                          class="w-20 h-20 object-cover rounded-lg border border-gray-200"
-                        />
-                        <p class="text-[10px] text-gray-400 mt-1 text-center">Current</p>
-                      </div>
-                    <% end %>
-                  <% end %>
-                <% end %>
-                <div class="flex-1">
-                  <!-- Drop zone -->
-                  <label class="flex flex-col items-center justify-center w-full h-28 border-2 border-dashed border-gray-300 rounded-lg cursor-pointer hover:border-amber-400 hover:bg-amber-50 transition">
-                    <svg
-                      class="w-8 h-8 text-gray-400 mb-2"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                      stroke-width="1.5"
-                    >
-                      <path
-                        stroke-linecap="round"
-                        stroke-linejoin="round"
-                        d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"
-                      />
-                    </svg>
-                    <span class="text-xs text-gray-500">Click to upload or drag & drop</span>
-                    <span class="text-[10px] text-gray-400 mt-0.5">JPG, PNG, WEBP up to 10MB</span>
-                    <.live_file_input upload={@uploads.product_image} />
-                  </label>
-                  <!-- Upload entries -->
-                  <%= for entry <- @uploads.product_image.entries do %>
-                    <div class="mt-2 flex items-center gap-3">
-                      <.live_img_preview
-                        entry={entry}
-                        class="w-12 h-12 object-cover rounded-lg border border-gray-200"
-                      />
-                      <div class="flex-1">
-                        <p class="text-xs font-medium text-gray-700 truncate">{entry.client_name}</p>
-                        <div class="mt-1 h-1.5 w-full bg-gray-100 rounded-full overflow-hidden">
-                          <div
-                            class="h-full bg-amber-500 rounded-full transition-all"
-                            style={"width: #{entry.progress}%"}
-                          >
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        type="button"
-                        phx-click="cancel_upload"
-                        phx-value-ref={entry.ref}
-                        class="text-gray-400 hover:text-red-500 transition"
-                      >
-                        <svg
-                          class="w-4 h-4"
-                          fill="none"
-                          viewBox="0 0 24 24"
-                          stroke="currentColor"
-                          stroke-width="2"
-                        >
-                          <path
-                            stroke-linecap="round"
-                            stroke-linejoin="round"
-                            d="M6 18L18 6M6 6l12 12"
-                          />
-                        </svg>
-                      </button>
+                    <div class="flex-1">
+                      <p class="text-xs text-gray-600 font-semibold">Current image</p>
+                      <p class="text-xs text-gray-400 truncate">{@editing.image_url}</p>
                     </div>
-                  <% end %>
-                  <!-- URL fallback -->
-                  <div class="mt-2">
-                    <.field
-                      form={@form}
-                      field={:image_url}
-                      label=""
-                      type="text"
-                      placeholder="Or paste an image URL"
-                    />
                   </div>
+                <% end %>
+              <% end %>
+              
+    <!-- File Upload Input -->
+              <.live_file_input
+                upload={@uploads.product_image}
+                class="block w-full text-sm text-gray-700 border border-gray-200 rounded-lg p-2 mb-2"
+              />
+              
+    <!-- Upload Preview (for new uploads) -->
+              <%= for entry <- @uploads.product_image.entries do %>
+                <div class="mt-2 flex items-center gap-3 p-2 bg-blue-50 rounded-lg border border-blue-200">
+                  <.live_img_preview
+                    entry={entry}
+                    class="w-16 h-16 object-cover rounded-lg border border-gray-200"
+                  />
+                  <div class="flex-1">
+                    <p class="text-xs text-blue-700 truncate font-semibold">{entry.client_name}</p>
+                    <div class="mt-1 h-1.5 w-full bg-blue-200 rounded-full overflow-hidden">
+                      <div class="h-full bg-blue-500 rounded-full" style={"width: #{entry.progress}%"}>
+                      </div>
+                    </div>
+                    <%= for err <- upload_errors(@uploads.product_image, entry) do %>
+                      <p class="text-xs text-red-500 mt-0.5">{err}</p>
+                    <% end %>
+                  </div>
+                  <button
+                    type="button"
+                    phx-click="cancel_upload"
+                    phx-value-ref={entry.ref}
+                    class="text-gray-400 hover:text-red-500 text-sm font-bold"
+                  >
+                    ✕
+                  </button>
                 </div>
+              <% end %>
+              
+    <!-- URL Input as alternative -->
+              <div class="mt-2">
+                <.field
+                  form={@form}
+                  field={:image_url}
+                  label=""
+                  type="text"
+                  placeholder="Or paste an image URL here"
+                />
               </div>
             </div>
+
             <.field form={@form} field={:description} label="Description" type="textarea" />
             <div class="flex gap-6">
               <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="hidden" name="product[is_featured]" value="false" />
                 <input
                   type="checkbox"
                   name="product[is_featured]"
+                  value="true"
                   checked={Phoenix.HTML.Form.input_value(@form, :is_featured)}
                   class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
                 /> Featured
               </label>
               <label class="flex items-center gap-2 text-sm text-gray-700 cursor-pointer">
+                <input type="hidden" name="product[is_active]" value="false" />
                 <input
                   type="checkbox"
                   name="product[is_active]"
+                  value="true"
                   checked={Phoenix.HTML.Form.input_value(@form, :is_active) != false}
                   class="rounded border-gray-300 text-amber-500 focus:ring-amber-400"
                 /> Active

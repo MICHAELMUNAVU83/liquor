@@ -3,19 +3,20 @@ defmodule Liquor.Catalog.Product do
   import Ecto.Changeset
 
   schema "products" do
-    field :name,        :string
-    field :slug,        :string
+    field :name, :string
+    field :slug, :string
     field :description, :string
-    field :badge,       :string   # "best_seller" | "limited_edition" | nil
-    field :image_url,   :string
+    # "best_seller" | "limited_edition" | nil
+    field :badge, :string
+    field :image_url, :string
     field :is_featured, :boolean, default: false
-    field :is_active,   :boolean, default: true
-    field :year,        :integer
+    field :is_active, :boolean, default: true
+    field :year, :integer
 
     belongs_to :category, Liquor.Catalog.Category
-    belongs_to :brand,    Liquor.Catalog.Brand
-    has_many   :variants, Liquor.Catalog.ProductVariant, on_delete: :delete_all
-    has_many   :reviews,  Liquor.Orders.Review
+    belongs_to :brand, Liquor.Catalog.Brand
+    has_many :variants, Liquor.Catalog.ProductVariant, on_delete: :delete_all
+    has_many :reviews, Liquor.Orders.Review
 
     timestamps()
   end
@@ -24,8 +25,18 @@ defmodule Liquor.Catalog.Product do
 
   def changeset(product, attrs) do
     product
-    |> cast(attrs, [:name, :slug, :description, :badge, :image_url,
-                    :is_featured, :is_active, :year, :category_id, :brand_id])
+    |> cast(attrs, [
+      :name,
+      :slug,
+      :description,
+      :badge,
+      :image_url,
+      :is_featured,
+      :is_active,
+      :year,
+      :category_id,
+      :brand_id
+    ])
     |> validate_required([:name, :category_id])
     |> maybe_generate_slug()
     |> validate_required([:slug])
@@ -37,11 +48,12 @@ defmodule Liquor.Catalog.Product do
 
   defp maybe_generate_slug(%Ecto.Changeset{} = cs) do
     existing = get_field(cs, :slug)
+
     if existing && existing != "" do
       cs
     else
       case get_change(cs, :name) do
-        nil  -> cs
+        nil -> cs
         name -> put_change(cs, :slug, slugify(name))
       end
     end
