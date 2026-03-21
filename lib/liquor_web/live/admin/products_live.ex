@@ -886,10 +886,10 @@ defmodule LiquorWeb.Admin.ProductsLive do
                       {if v.abv, do: "#{v.abv}%", else: "—"}
                     </p>
                     <p class="col-span-2 text-sm font-bold text-gray-900">
-                      KSh {Decimal.round(v.price, 2)}
+                      KSh {format_money(v.price)}
                     </p>
                     <p class="col-span-2 text-sm text-gray-400">
-                      {if v.compare_price, do: "KSh #{Decimal.round(v.compare_price, 2)}", else: "—"}
+                      {if v.compare_price, do: "KSh #{format_money(v.compare_price)}", else: "—"}
                     </p>
                     <p class={[
                       "col-span-1 text-sm font-bold",

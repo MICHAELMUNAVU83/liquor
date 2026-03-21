@@ -116,16 +116,16 @@ defmodule LiquorWeb.Admin.ExpensesLive do
           <p class="text-xs font-semibold text-gray-400 uppercase tracking-wide mt-0.5">Records</p>
         </div>
         <div class="bg-red-50 border border-red-200 rounded-xl p-4">
-          <p class="text-xl font-black text-red-700">KSh <%= Decimal.round(@total || Decimal.new("0"), 2) %></p>
+          <p class="text-xl font-black text-red-700">KSh <%= format_money(@total || Decimal.new("0")) %></p>
           <p class="text-xs font-semibold text-red-600 uppercase tracking-wide mt-0.5">Total</p>
         </div>
         <div class="bg-amber-50 border border-amber-200 rounded-xl p-4">
-          <p class="text-xl font-black text-amber-700">KSh <%= Decimal.round(@this_month || Decimal.new("0"), 2) %></p>
+          <p class="text-xl font-black text-amber-700">KSh <%= format_money(@this_month || Decimal.new("0")) %></p>
           <p class="text-xs font-semibold text-amber-600 uppercase tracking-wide mt-0.5">This Month</p>
         </div>
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <p class="text-xl font-black text-blue-700">
-            KSh <%= Decimal.round(Map.get(@by_category, "stock_restock") || Decimal.new("0"), 2) %>
+            KSh <%= format_money(Map.get(@by_category, "stock_restock") || Decimal.new("0")) %>
           </p>
           <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mt-0.5">Stock Restock</p>
         </div>
@@ -141,7 +141,7 @@ defmodule LiquorWeb.Admin.ExpensesLive do
                 <span class={["text-[10px] font-bold uppercase tracking-wide px-2 py-0.5 rounded", category_color(cat)]}>
                   <%= category_label(cat) %>
                 </span>
-                <span class="font-bold text-gray-800 text-sm">KSh <%= Decimal.round(amt, 2) %></span>
+                <span class="font-bold text-gray-800 text-sm">KSh <%= format_money(amt) %></span>
               </div>
             <% end %>
           </div>
@@ -214,7 +214,7 @@ defmodule LiquorWeb.Admin.ExpensesLive do
                     <% end %>
                     <%= if exp.quantity do %>
                       <p><%= exp.quantity %> units
-                        <%= if exp.unit_cost do %>@ KSh <%= Decimal.round(exp.unit_cost, 2) %> each<% end %>
+                        <%= if exp.unit_cost do %>@ KSh <%= format_money(exp.unit_cost) %> each<% end %>
                       </p>
                     <% end %>
                   <% else %>
@@ -222,7 +222,7 @@ defmodule LiquorWeb.Admin.ExpensesLive do
                   <% end %>
                 </td>
                 <td class="px-5 py-3 text-right font-bold text-gray-900">
-                  KSh <%= Decimal.round(exp.amount, 2) %>
+                  KSh <%= format_money(exp.amount) %>
                 </td>
                 <td class="px-5 py-3 text-right">
                   <button

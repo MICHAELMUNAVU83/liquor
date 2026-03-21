@@ -146,7 +146,7 @@ defmodule LiquorWeb.CartLive do
     push_event(socket, "cart:sync", %{items: raw})
   end
 
-  defp fmt(decimal), do: Decimal.round(decimal || Decimal.new("0"), 2)
+  defp fmt(decimal), do: format_money(decimal || Decimal.new("0"))
 
   # ── Render ──────────────────────────────────────────────────────────────────
 
@@ -295,7 +295,7 @@ defmodule LiquorWeb.CartLive do
                                     selected={v.id == item.variant_id}
                                     disabled={!v.in_stock && v.id != item.variant_id}
                                   >
-                                    <%= v.size %> — KSh <%= Decimal.round(v.price, 2) %><%= if !v.in_stock, do: " (out of stock)" %>
+                                    <%= v.size %> — KSh <%= format_money(v.price) %><%= if !v.in_stock, do: " (out of stock)" %>
                                   </option>
                                 <% end %>
                               </select>

@@ -239,12 +239,12 @@ defmodule LiquorWeb.HomeLive do
       <div class="flex items-baseline gap-2 mb-2">
         <%= if @active_variant do %>
           <span class="text-base font-bold text-zinc-900">
-            KSh <%= Decimal.round(@active_variant.price, 2) %>
+            KSh <%= format_money(@active_variant.price) %>
           </span>
           <%= if @active_variant.compare_price &&
                  Decimal.compare(@active_variant.compare_price, @active_variant.price) == :gt do %>
             <span class="text-xs text-zinc-400 line-through">
-              KSh <%= Decimal.round(@active_variant.compare_price, 2) %>
+              KSh <%= format_money(@active_variant.compare_price) %>
             </span>
           <% end %>
         <% else %>

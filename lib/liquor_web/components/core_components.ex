@@ -19,6 +19,33 @@ defmodule LiquorWeb.CoreComponents do
 
   alias Phoenix.LiveView.JS
 
+  @doc "Formats a Decimal/integer/float as a KES number string with commas, e.g. 1,250,000.00"
+  def format_money(nil), do: "0.00"
+  def format_money(%Decimal{} = amount) do
+    str = amount |> Decimal.round(2) |> Decimal.to_string(:normal)
+    {int_str, dec_str} =
+      case String.split(str, ".") do
+        [i, d] -> {i, String.pad_trailing(d, 2, "0") |> String.slice(0, 2)}
+        [i]    -> {i, "00"}
+      end
+    negative = String.starts_with?(int_str, "-")
+    digits   = if negative, do: String.slice(int_str, 1..-1//1), else: int_str
+    with_commas =
+      digits
+      |> String.graphemes()
+      |> Enum.reverse()
+      |> Enum.chunk_every(3)
+      |> Enum.map(&Enum.join/1)
+      |> Enum.join(",")
+      |> String.graphemes()
+      |> Enum.reverse()
+      |> Enum.join()
+    "#{if negative, do: "-", else: ""}#{with_commas}.#{dec_str}"
+  end
+  def format_money(n) when is_integer(n), do: format_money(Decimal.new(n))
+  def format_money(n) when is_float(n),   do: format_money(Decimal.from_float(n))
+  def format_money(n) when is_binary(n),  do: format_money(Decimal.new(n))
+
   @doc """
   Renders a modal.
 

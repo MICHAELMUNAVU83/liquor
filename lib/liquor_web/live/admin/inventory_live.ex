@@ -138,7 +138,7 @@ defmodule LiquorWeb.Admin.InventoryLive do
 
       {:noreply,
        socket
-       |> put_flash(:info, "Stock updated and expense of KSh #{Decimal.round(total, 2)} recorded.")
+       |> put_flash(:info, "Stock updated and expense of KSh #{format_money(total)} recorded.")
        |> assign(expense_modal: nil)}
     else
       _ ->
@@ -201,7 +201,7 @@ defmodule LiquorWeb.Admin.InventoryLive do
         <div>
           <p class="text-xs font-bold uppercase tracking-widest text-amber-600 mb-1">Total Stock Value</p>
           <p class="text-3xl font-black text-amber-700">
-            KSh <%= Decimal.round(@stock_value || Decimal.new("0"), 2) %>
+            KSh <%= format_money(@stock_value || Decimal.new("0")) %>
           </p>
         </div>
         <svg class="w-12 h-12 text-amber-300" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
@@ -253,7 +253,7 @@ defmodule LiquorWeb.Admin.InventoryLive do
                 <td class="px-5 py-3 font-semibold text-gray-800"><%= v.product.name %></td>
                 <td class="px-5 py-3 font-mono text-xs text-gray-400"><%= v.sku %></td>
                 <td class="px-5 py-3 text-gray-500"><%= v.size %></td>
-                <td class="px-5 py-3 text-right text-gray-700">KSh <%= Decimal.round(v.price, 2) %></td>
+                <td class="px-5 py-3 text-right text-gray-700">KSh <%= format_money(v.price) %></td>
                 <td class="px-5 py-3 text-center">
                   <%= if @editing_id == v.id do %>
                     <div class="flex items-center justify-center gap-1">
@@ -317,7 +317,7 @@ defmodule LiquorWeb.Admin.InventoryLive do
                   </span>
                 </td>
                 <td class="px-5 py-3 text-right text-gray-600">
-                  KSh <%= Decimal.round(Decimal.mult(v.price, Decimal.new(v.stock_quantity)), 2) %>
+                  KSh <%= format_money(Decimal.mult(v.price, Decimal.new(v.stock_quantity))) %>
                 </td>
                 <td class="px-5 py-3 text-right">
                   <button
@@ -370,7 +370,7 @@ defmodule LiquorWeb.Admin.InventoryLive do
                 end %>
                 <%= if total && Decimal.compare(total, Decimal.new("0")) == :gt do %>
                   <p class="text-sm text-gray-500 mt-1">
-                    Total expense: <span class="font-bold text-gray-800">KSh <%= Decimal.round(total, 2) %></span>
+                    Total expense: <span class="font-bold text-gray-800">KSh <%= format_money(total) %></span>
                   </p>
                 <% end %>
               <% end %>

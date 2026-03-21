@@ -63,15 +63,15 @@ defmodule LiquorWeb.Admin.DashboardLive do
       <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-xl p-5">
           <p class="text-xs font-bold uppercase tracking-widest text-amber-500 mb-1">Today's Revenue</p>
-          <p class="text-3xl font-black text-amber-700">KSh <%= Decimal.round(@revenue_today || Decimal.new("0"), 2) %></p>
+          <p class="text-3xl font-black text-amber-700">KSh <%= format_money(@revenue_today || Decimal.new("0")) %></p>
         </div>
         <div class="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-5">
           <p class="text-xs font-bold uppercase tracking-widest text-blue-500 mb-1">This Month</p>
-          <p class="text-3xl font-black text-blue-700">KSh <%= Decimal.round(@revenue_month || Decimal.new("0"), 2) %></p>
+          <p class="text-3xl font-black text-blue-700">KSh <%= format_money(@revenue_month || Decimal.new("0")) %></p>
         </div>
         <div class="bg-gradient-to-br from-emerald-50 to-teal-50 border border-emerald-200 rounded-xl p-5">
           <p class="text-xs font-bold uppercase tracking-widest text-emerald-500 mb-1">Total Revenue</p>
-          <p class="text-3xl font-black text-emerald-700">KSh <%= Decimal.round(@total_revenue || Decimal.new("0"), 2) %></p>
+          <p class="text-3xl font-black text-emerald-700">KSh <%= format_money(@total_revenue || Decimal.new("0")) %></p>
         </div>
       </div>
 
@@ -166,7 +166,7 @@ defmodule LiquorWeb.Admin.DashboardLive do
                       </span>
                     </td>
                     <td class="px-5 py-3 text-right font-semibold text-gray-900">
-                      KSh <%= Decimal.round(order.total_amount, 2) %>
+                      KSh <%= format_money(order.total_amount) %>
                     </td>
                   </tr>
                 <% end %>
@@ -238,7 +238,7 @@ defmodule LiquorWeb.Admin.DashboardLive do
                     <span class="font-semibold text-gray-800 truncate"><%= product.name %></span>
                   </td>
                   <td class="px-5 py-3 text-center text-gray-500"><%= product.qty %></td>
-                  <td class="px-5 py-3 text-right font-bold text-gray-900">KSh <%= Decimal.round(product.revenue, 2) %></td>
+                  <td class="px-5 py-3 text-right font-bold text-gray-900">KSh <%= format_money(product.revenue) %></td>
                 </tr>
               <% end %>
               <%= if @top_products == [] do %>
@@ -276,7 +276,7 @@ defmodule LiquorWeb.Admin.DashboardLive do
 
           <div class="mt-5 pt-4 border-t border-gray-100">
             <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-2">Stock Value</p>
-            <p class="text-xl font-black text-gray-900">KSh <%= Decimal.round(@stock_value || Decimal.new("0"), 2) %></p>
+            <p class="text-xl font-black text-gray-900">KSh <%= format_money(@stock_value || Decimal.new("0")) %></p>
           </div>
         </div>
       </div>

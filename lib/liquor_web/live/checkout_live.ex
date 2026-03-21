@@ -133,7 +133,7 @@ defmodule LiquorWeb.CheckoutLive do
     items_text =
       items
       |> Enum.map(fn item ->
-        line_total = Decimal.round(Decimal.mult(item.price, Decimal.new(item.quantity)), 2)
+        line_total = format_money(Decimal.mult(item.price, Decimal.new(item.quantity)))
         "• #{item.product_name} #{item.size} × #{item.quantity} = KSh #{line_total}"
       end)
       |> Enum.join("\n")
@@ -154,9 +154,9 @@ defmodule LiquorWeb.CheckoutLive do
     *Items:*
     #{items_text}
 
-    💰 *Subtotal:* KSh #{Decimal.round(Cart.subtotal(items), 2)}
-    🚚 *Shipping:* KSh #{Decimal.round(order.shipping_amount, 2)}
-    ✅ *Total:* KSh #{Decimal.round(order.total_amount, 2)}
+    💰 *Subtotal:* KSh #{format_money(Cart.subtotal(items))}
+    🚚 *Shipping:* KSh #{format_money(order.shipping_amount)}
+    ✅ *Total:* KSh #{format_money(order.total_amount)}
     """
     |> String.trim()
   end
@@ -178,7 +178,7 @@ defmodule LiquorWeb.CheckoutLive do
     Decimal.mult(sub, Decimal.div(Decimal.new(pct), Decimal.new(100)))
   end
 
-  defp fmt(d), do: Decimal.round(d || Decimal.new("0"), 2)
+  defp fmt(d), do: format_money(d || Decimal.new("0"))
 
   # ── Render ────────────────────────────────────────────────────────────────────
 

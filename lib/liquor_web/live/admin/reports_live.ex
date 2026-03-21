@@ -59,19 +59,19 @@ defmodule LiquorWeb.Admin.ReportsLive do
       <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
         <div class="bg-white border border-gray-200 rounded-xl p-5">
           <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Revenue Today</p>
-          <p class="text-2xl font-black text-gray-900">KSh <%= Decimal.round(@revenue_today || Decimal.new("0"), 2) %></p>
+          <p class="text-2xl font-black text-gray-900">KSh <%= format_money(@revenue_today || Decimal.new("0")) %></p>
         </div>
         <div class="bg-white border border-gray-200 rounded-xl p-5">
           <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">This Month</p>
-          <p class="text-2xl font-black text-amber-600">KSh <%= Decimal.round(@revenue_month || Decimal.new("0"), 2) %></p>
+          <p class="text-2xl font-black text-amber-600">KSh <%= format_money(@revenue_month || Decimal.new("0")) %></p>
         </div>
         <div class="bg-white border border-gray-200 rounded-xl p-5">
           <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Total Revenue</p>
-          <p class="text-2xl font-black text-emerald-600">KSh <%= Decimal.round(@total_revenue || Decimal.new("0"), 2) %></p>
+          <p class="text-2xl font-black text-emerald-600">KSh <%= format_money(@total_revenue || Decimal.new("0")) %></p>
         </div>
         <div class="bg-white border border-gray-200 rounded-xl p-5">
           <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Stock Value</p>
-          <p class="text-2xl font-black text-blue-600">KSh <%= Decimal.round(@stock_value || Decimal.new("0"), 2) %></p>
+          <p class="text-2xl font-black text-blue-600">KSh <%= format_money(@stock_value || Decimal.new("0")) %></p>
         </div>
       </div>
 
@@ -110,7 +110,7 @@ defmodule LiquorWeb.Admin.ReportsLive do
                   height = max(4, round(pct * 0.9))
                 %>
                 <div class="flex-1 flex flex-col items-center gap-1">
-                  <span class="text-xs font-semibold text-gray-600">KSh <%= Decimal.round(row.revenue, 0) %></span>
+                  <span class="text-xs font-semibold text-gray-600">KSh <%= format_money(row.revenue) %></span>
                   <div
                     class="w-full bg-amber-400 rounded-t-md transition-all"
                     style={"height: #{height}%;"}
@@ -180,7 +180,7 @@ defmodule LiquorWeb.Admin.ReportsLive do
                     <span class="font-semibold text-gray-800 truncate"><%= product.name %></span>
                   </td>
                   <td class="px-5 py-3 text-center text-gray-600"><%= product.qty %></td>
-                  <td class="px-5 py-3 text-right font-bold text-gray-900">KSh <%= Decimal.round(product.revenue, 2) %></td>
+                  <td class="px-5 py-3 text-right font-bold text-gray-900">KSh <%= format_money(product.revenue) %></td>
                 </tr>
               <% end %>
               <%= if @top_products == [] do %>

@@ -112,7 +112,7 @@ defmodule LiquorWeb.Admin.OrdersLive do
                   </span>
                 </td>
                 <td class="px-5 py-3 text-right font-semibold text-zinc-900">
-                  KSh <%= Decimal.round(order.total_amount, 2) %>
+                  KSh <%= format_money(order.total_amount) %>
                 </td>
                 <td class="px-5 py-3 text-right">
                   <button phx-click="view_order" phx-value-id={order.id} class="text-xs font-semibold text-amber-600 hover:underline">
@@ -193,14 +193,14 @@ defmodule LiquorWeb.Admin.OrdersLive do
                         <p class="text-xs text-zinc-400"><%= item.variant_size %> · <%= item.variant_sku %></p>
                       </td>
                       <td class="px-4 py-2 text-center text-zinc-600"><%= item.quantity %></td>
-                      <td class="px-4 py-2 text-right font-semibold text-zinc-900">KSh <%= Decimal.round(item.subtotal, 2) %></td>
+                      <td class="px-4 py-2 text-right font-semibold text-zinc-900">KSh <%= format_money(item.subtotal) %></td>
                     </tr>
                   <% end %>
                 </tbody>
                 <tfoot class="border-t-2 border-zinc-200 bg-zinc-50">
                   <tr>
                     <td colspan="2" class="px-4 py-2 text-sm font-bold text-zinc-700 text-right">Total</td>
-                    <td class="px-4 py-2 text-right font-black text-zinc-900">KSh <%= Decimal.round(@selected_order.total_amount, 2) %></td>
+                    <td class="px-4 py-2 text-right font-black text-zinc-900">KSh <%= format_money(@selected_order.total_amount) %></td>
                   </tr>
                 </tfoot>
               </table>

@@ -604,7 +604,7 @@ defmodule LiquorWeb.Admin.SalesLive do
                       <%= sale.payment_method || "—" %>
                     </span>
                   </td>
-                  <td class="px-5 py-3 text-right font-bold text-gray-900">KSh <%= Decimal.round(sale.total_amount, 2) %></td>
+                  <td class="px-5 py-3 text-right font-bold text-gray-900">KSh <%= format_money(sale.total_amount) %></td>
                 </tr>
               <% end %>
               <%= if @filtered_sales == [] do %>
@@ -808,7 +808,7 @@ defmodule LiquorWeb.Admin.SalesLive do
                                 <p class="text-sm font-medium text-gray-700"><%= v.size %></p>
                                 <p class="text-xs text-gray-400"><%= v.sku %></p>
                               </div>
-                              <p class="text-sm font-black text-amber-600 shrink-0">KSh <%= Decimal.round(v.price, 2) %></p>
+                              <p class="text-sm font-black text-amber-600 shrink-0">KSh <%= format_money(v.price) %></p>
                               <p class={["text-xs shrink-0", if(v.stock_quantity > 5, do: "text-emerald-500", else: "text-red-400")]}>
                                 <%= v.stock_quantity %> in stock
                               </p>
@@ -907,7 +907,7 @@ defmodule LiquorWeb.Admin.SalesLive do
                           class="w-6 h-6 rounded bg-gray-100 hover:bg-gray-200 text-gray-600 font-bold text-sm flex items-center justify-center"
                         >+</button>
                       </div>
-                      <p class="text-sm font-bold text-gray-900">KSh <%= Decimal.round(Decimal.mult(item.price, Decimal.new(item.qty)), 2) %></p>
+                      <p class="text-sm font-bold text-gray-900">KSh <%= format_money(Decimal.mult(item.price, Decimal.new(item.qty))) %></p>
                     </div>
                   </div>
                 <% end %>
@@ -917,11 +917,11 @@ defmodule LiquorWeb.Admin.SalesLive do
               <div class="px-4 py-4 border-t border-gray-200 bg-white space-y-2">
                 <div class="flex justify-between text-xs text-gray-500">
                   <span>Subtotal</span>
-                  <span class="font-semibold text-gray-800">KSh <%= Decimal.round(@subtotal, 2) %></span>
+                  <span class="font-semibold text-gray-800">KSh <%= format_money(@subtotal) %></span>
                 </div>
                 <div class="flex justify-between font-black text-sm">
                   <span class="text-gray-900">Total</span>
-                  <span class="text-amber-600">KSh <%= Decimal.round(@subtotal, 2) %></span>
+                  <span class="text-amber-600">KSh <%= format_money(@subtotal) %></span>
                 </div>
                 <button
                   phx-click="confirm_sale"
@@ -943,7 +943,7 @@ defmodule LiquorWeb.Admin.SalesLive do
           <h3 class="text-lg font-black text-gray-900 mb-2">Confirm Sale</h3>
           <p class="text-sm text-gray-500 mb-4">
             Record a <%= String.upcase(@payment_method) %> sale of
-            <strong class="text-gray-900">KSh <%= Decimal.round(@subtotal, 2) %></strong>
+            <strong class="text-gray-900">KSh <%= format_money(@subtotal) %></strong>
             for <%= if @customer_name != "", do: @customer_name, else: "Walk-in customer" %>?
           </p>
           <div class="flex gap-3">
@@ -1019,8 +1019,8 @@ defmodule LiquorWeb.Admin.SalesLive do
                             <p class="text-xs text-gray-400"><%= item.variant_size %> · <%= item.variant_sku %></p>
                           </td>
                           <td class="px-3 py-2 text-center text-gray-700 font-semibold"><%= item.quantity %></td>
-                          <td class="px-3 py-2 text-right text-gray-600">KSh <%= Decimal.round(item.unit_price, 2) %></td>
-                          <td class="px-3 py-2 text-right font-bold text-gray-900">KSh <%= Decimal.round(item.subtotal, 2) %></td>
+                          <td class="px-3 py-2 text-right text-gray-600">KSh <%= format_money(item.unit_price) %></td>
+                          <td class="px-3 py-2 text-right font-bold text-gray-900">KSh <%= format_money(item.subtotal) %></td>
                         </tr>
                       <% end %>
                     </tbody>
@@ -1033,23 +1033,23 @@ defmodule LiquorWeb.Admin.SalesLive do
             <div class="bg-gray-50 rounded-lg px-4 py-3 space-y-1.5">
               <div class="flex justify-between text-sm">
                 <span class="text-gray-500">Subtotal</span>
-                <span class="font-semibold text-gray-800">KSh <%= Decimal.round(s.total_amount, 2) %></span>
+                <span class="font-semibold text-gray-800">KSh <%= format_money(s.total_amount) %></span>
               </div>
               <%= if Decimal.compare(s.shipping_amount, Decimal.new("0")) != :eq do %>
                 <div class="flex justify-between text-sm">
                   <span class="text-gray-500">Shipping</span>
-                  <span class="text-gray-700">KSh <%= Decimal.round(s.shipping_amount, 2) %></span>
+                  <span class="text-gray-700">KSh <%= format_money(s.shipping_amount) %></span>
                 </div>
               <% end %>
               <%= if Decimal.compare(s.discount_amount, Decimal.new("0")) != :eq do %>
                 <div class="flex justify-between text-sm">
                   <span class="text-gray-500">Discount</span>
-                  <span class="text-emerald-600">-KSh <%= Decimal.round(s.discount_amount, 2) %></span>
+                  <span class="text-emerald-600">-KSh <%= format_money(s.discount_amount) %></span>
                 </div>
               <% end %>
               <div class="flex justify-between text-base font-black pt-1.5 border-t border-gray-200">
                 <span class="text-gray-900">Total</span>
-                <span class="text-amber-600">KSh <%= Decimal.round(s.total_amount, 2) %></span>
+                <span class="text-amber-600">KSh <%= format_money(s.total_amount) %></span>
               </div>
             </div>
 

@@ -95,12 +95,12 @@ defmodule LiquorWeb.ProductLive do
           <div class="flex items-baseline gap-3 mb-6">
             <%= if @active_variant do %>
               <span class="text-4xl font-black text-zinc-900">
-                KSh {Decimal.round(@active_variant.price, 2)}
+                KSh {format_money(@active_variant.price)}
               </span>
               <%= if @active_variant.compare_price &&
                      Decimal.compare(@active_variant.compare_price, @active_variant.price) == :gt do %>
                 <span class="text-lg text-zinc-400 line-through">
-                  KSh {Decimal.round(@active_variant.compare_price, 2)}
+                  KSh {format_money(@active_variant.compare_price)}
                 </span>
                 <% saving = Decimal.sub(@active_variant.compare_price, @active_variant.price)
                 pct =

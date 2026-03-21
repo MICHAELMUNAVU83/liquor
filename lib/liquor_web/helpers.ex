@@ -6,8 +6,8 @@ defmodule LiquorWeb.Helpers do
   def fmt(nil), do: "0.00"
 
   def fmt(d) do
-    rounded = Decimal.round(d || Decimal.new("0"), 2)
-    str = Decimal.to_string(rounded)
+    d = d || Decimal.new("0")
+    str = d |> Decimal.round(2) |> Decimal.to_string(:normal)
 
     {sign, digits} =
       if String.starts_with?(str, "-"),

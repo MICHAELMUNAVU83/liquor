@@ -19,6 +19,8 @@ defmodule LiquorWeb.HomeComponents do
 
   use Phoenix.Component
 
+  import LiquorWeb.CoreComponents, only: [format_money: 1]
+
   # ---------------------------------------------------------------------------
   # Promo Banner
   # ---------------------------------------------------------------------------
@@ -837,7 +839,7 @@ defmodule LiquorWeb.HomeComponents do
                   <p class="text-sm text-zinc-300 mb-4">
                     from
                     <span class="text-amber-400 font-bold">
-                      KSh {Decimal.round(default_variant.price, 2)}
+                      KSh {format_money(default_variant.price)}
                     </span>
                   </p>
                 <% end %>

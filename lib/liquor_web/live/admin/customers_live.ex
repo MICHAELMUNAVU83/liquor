@@ -124,7 +124,7 @@ defmodule LiquorWeb.Admin.CustomersLive do
         </div>
         <div class="bg-blue-50 border border-blue-200 rounded-xl p-4">
           <p class="text-xl font-black text-blue-700">
-            KSh <%= Enum.reduce(@customers, Decimal.new("0"), fn c, acc -> Decimal.add(acc, c.lifetime_value) end) |> Decimal.round(0) %>
+            KSh <%= Enum.reduce(@customers, Decimal.new("0"), fn c, acc -> Decimal.add(acc, c.lifetime_value) end) |> format_money() %>
           </p>
           <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide mt-0.5">Total LTV</p>
         </div>
@@ -181,7 +181,7 @@ defmodule LiquorWeb.Admin.CustomersLive do
                   </span>
                 </td>
                 <td class="px-5 py-3 text-right font-semibold text-gray-900">
-                  KSh <%= Decimal.round(customer.lifetime_value, 2) %>
+                  KSh <%= format_money(customer.lifetime_value) %>
                 </td>
                 <td class="px-5 py-3 text-center">
                   <span class={[
@@ -351,7 +351,7 @@ defmodule LiquorWeb.Admin.CustomersLive do
                           </span>
                         </td>
                         <td class="px-4 py-3 text-right font-semibold text-gray-900">
-                          KSh <%= Decimal.round(order.total_amount, 2) %>
+                          KSh <%= format_money(order.total_amount) %>
                         </td>
                       </tr>
                     <% end %>
@@ -363,7 +363,7 @@ defmodule LiquorWeb.Admin.CustomersLive do
                         KSh <%= @customer_orders
                              |> Enum.filter(&(&1.payment_status == "paid"))
                              |> Enum.reduce(Decimal.new("0"), &Decimal.add(&2, &1.total_amount))
-                             |> Decimal.round(2) %>
+                             |> format_money() %>
                       </td>
                     </tr>
                   </tfoot>
