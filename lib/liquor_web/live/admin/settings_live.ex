@@ -40,7 +40,8 @@ defmodule LiquorWeb.Admin.SettingsLive do
     }
 
     {:ok,
-     assign(socket,
+     socket
+     |> assign(
        page_title: "Admin – Settings",
        active_tab: "settings",
        tab: "store",
@@ -50,6 +51,11 @@ defmodule LiquorWeb.Admin.SettingsLive do
        featured_ids: featured_ids,
        banner_previews: banner_previews,
        saved: false
+     )
+     |> allow_upload(:about_hero_image,
+       accept: ~w(.jpg .jpeg .png .webp .gif),
+       max_entries: 1,
+       max_file_size: 10_000_000
      ), layout: {LiquorWeb.Layouts, :admin}}
   end
 
@@ -71,6 +77,18 @@ defmodule LiquorWeb.Admin.SettingsLive do
   end
 
   def handle_event("save_about", %{"settings" => params}, socket) do
+    uploaded_url =
+      consume_uploaded_entries(socket, :about_hero_image, fn %{path: tmp_path}, entry ->
+        dest_dir = Application.app_dir(:liquor, "priv/static/uploads")
+        File.mkdir_p!(dest_dir)
+        ext = Path.extname(entry.client_name)
+        filename = "#{System.unique_integer([:positive, :monotonic])}#{ext}"
+        File.cp!(tmp_path, Path.join(dest_dir, filename))
+        {:ok, "/uploads/#{filename}"}
+      end)
+      |> List.first()
+
+    params = if uploaded_url, do: Map.put(params, "about_hero_image", uploaded_url), else: params
     keys = ~w(about_hero_heading about_hero_desc about_hero_image about_mission about_values)
     Enum.each(keys, fn k -> Settings.set(k, params[k] || "") end)
     {:noreply, assign(socket, settings: Settings.all(), saved: true)}
@@ -103,6 +121,10 @@ defmodule LiquorWeb.Admin.SettingsLive do
     preview = if product, do: product.image_url, else: nil
     previews = if slot, do: Map.put(socket.assigns.banner_previews, slot, preview), else: socket.assigns.banner_previews
     {:noreply, assign(socket, banner_previews: previews)}
+  end
+
+  def handle_event("cancel_about_upload", %{"ref" => ref}, socket) do
+    {:noreply, cancel_upload(socket, :about_hero_image, ref)}
   end
 
   def handle_event("save_banners", %{"settings" => params}, socket) do
@@ -338,18 +360,44 @@ defmodule LiquorWeb.Admin.SettingsLive do
             value={@settings["about_hero_desc"]}
             rows={3}
           />
-          <.settings_field
-            label="Hero Image URL"
-            name="settings[about_hero_image]"
-            value={@settings["about_hero_image"]}
-            placeholder="https://..."
-          />
-          <%= if @settings["about_hero_image"] && @settings["about_hero_image"] != "" do %>
-            <img
-              src={@settings["about_hero_image"]}
-              class="h-32 w-48 object-cover rounded-lg border border-gray-200"
-            />
-          <% end %>
+          <!-- Hero Image Upload -->
+          <div>
+            <label class="block text-xs font-semibold text-gray-600 mb-1">Hero Image</label>
+            <div class="flex flex-col gap-2">
+              <.live_file_input
+                upload={@uploads.about_hero_image}
+                class="block w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-amber-50 file:text-amber-700 hover:file:bg-amber-100 border border-gray-200 rounded-lg"
+              />
+              <%= for entry <- @uploads.about_hero_image.entries do %>
+                <div class="flex items-center gap-2 text-xs text-gray-500">
+                  <.live_img_preview entry={entry} class="h-20 w-28 object-cover rounded border border-gray-200" />
+                  <div class="flex-1">
+                    <p class="font-medium text-gray-700 truncate">{entry.client_name}</p>
+                    <p>{entry.progress}%</p>
+                  </div>
+                  <button type="button" phx-click="cancel_about_upload" phx-value-ref={entry.ref}
+                    class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">×</button>
+                </div>
+                <%= for err <- upload_errors(@uploads.about_hero_image, entry) do %>
+                  <p class="text-xs text-red-500">{Phoenix.Naming.humanize(err)}</p>
+                <% end %>
+              <% end %>
+              <p class="text-xs text-gray-400">Or paste an image URL directly:</p>
+              <input
+                type="text"
+                name="settings[about_hero_image]"
+                value={@settings["about_hero_image"] || ""}
+                placeholder="https://..."
+                class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+              />
+            </div>
+            <%= if @settings["about_hero_image"] && @settings["about_hero_image"] != "" do %>
+              <img
+                src={@settings["about_hero_image"]}
+                class="mt-2 h-32 w-48 object-cover rounded-lg border border-gray-200"
+              />
+            <% end %>
+          </div>
           <div class="grid grid-cols-1 md:grid-cols-2 gap-5 pt-2 border-t border-gray-100">
             <.settings_textarea
               label="Our Mission"
