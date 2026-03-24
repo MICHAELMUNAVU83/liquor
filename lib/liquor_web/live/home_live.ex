@@ -50,6 +50,9 @@ defmodule LiquorWeb.HomeLive do
        featured_products: featured_products,
        categories:        categories,
        brands:            brands,
+       all_products:      all_active,
+       search_query:      "",
+       search_results:    [],
        selected_variants: %{},
        hero_main_label:    s["hero_main_label"],
        hero_main_title:    s["hero_main_title"],
@@ -66,6 +69,25 @@ defmodule LiquorWeb.HomeLive do
        hero_tile2_image:   s["hero_tile2_image"],
        hero_tile2_link:    s["hero_tile2_link"]
      )}
+  end
+
+  @impl true
+  def handle_event("hero_search", %{"q" => q}, socket) do
+    q = String.trim(q)
+    results =
+      if String.length(q) >= 2 do
+        lower = String.downcase(q)
+        socket.assigns.all_products
+        |> Enum.filter(fn p -> String.contains?(String.downcase(p.name), lower) end)
+        |> Enum.take(8)
+      else
+        []
+      end
+    {:noreply, assign(socket, search_query: q, search_results: results)}
+  end
+
+  def handle_event("clear_search", _params, socket) do
+    {:noreply, assign(socket, search_query: "", search_results: [])}
   end
 
   @impl true
@@ -95,6 +117,79 @@ defmodule LiquorWeb.HomeLive do
   @impl true
   def render(assigns) do
     ~H"""
+    <!-- ── Hero Search Bar ─────────────────────────────────────────── -->
+    <div class="bg-zinc-900 py-6 px-4">
+      <div class="max-w-2xl mx-auto">
+        <p class="text-center text-zinc-400 text-xs uppercase tracking-widest font-semibold mb-3">
+          Find your favourite drink
+        </p>
+        <div class="relative" phx-click-away="clear_search">
+          <form phx-change="hero_search" phx-submit="hero_search" class="flex items-center rounded-xl overflow-hidden border-2 border-zinc-700 focus-within:border-amber-500 transition-all bg-white">
+            <svg class="w-5 h-5 text-zinc-400 ml-4 flex-shrink-0" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M21 21l-4.35-4.35M17 11A6 6 0 105 11a6 6 0 0012 0z"/>
+            </svg>
+            <input
+              type="text"
+              name="q"
+              value={@search_query}
+              placeholder="Search whisky, gin, wine, beer…"
+              autocomplete="off"
+              class="flex-1 px-3 py-3.5 text-sm text-zinc-800 placeholder-zinc-400 focus:outline-none bg-transparent"
+            />
+            <%= if @search_query != "" do %>
+              <button type="button" phx-click="clear_search" class="mr-2 text-zinc-400 hover:text-zinc-600 transition">
+                <svg class="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12"/>
+                </svg>
+              </button>
+            <% end %>
+            <button type="submit" class="bg-amber-500 hover:bg-amber-600 transition text-white px-5 py-3.5 text-sm font-bold tracking-wide uppercase">
+              Search
+            </button>
+          </form>
+
+          <%= if @search_results != [] do %>
+            <div class="absolute left-0 right-0 top-full mt-1 bg-white rounded-xl shadow-2xl border border-zinc-100 z-50 overflow-hidden">
+              <%= for product <- @search_results do %>
+                <% variant = Enum.find(product.variants, &(&1.is_default)) || List.first(product.variants) %>
+                <a
+                  href={"/shop/#{product.slug}"}
+                  class="flex items-center gap-3 px-4 py-3 hover:bg-amber-50 transition border-b border-zinc-50 last:border-0"
+                >
+                  <div class="w-10 h-10 rounded-lg overflow-hidden bg-zinc-100 flex-shrink-0">
+                    <%= if product.image_url do %>
+                      <img src={product.image_url} alt={product.name} class="w-full h-full object-cover" />
+                    <% else %>
+                      <div class="w-full h-full flex items-center justify-center">
+                        <svg class="w-5 h-5 text-zinc-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="1">
+                          <path stroke-linecap="round" stroke-linejoin="round" d="M20 3H4l2 7H6a1 1 0 000 2h.06l1.42 5.68A2 2 0 009.42 19h5.16a2 2 0 001.94-1.32L18 12h.06A1 1 0 0018 10h-2l2-7z"/>
+                        </svg>
+                      </div>
+                    <% end %>
+                  </div>
+                  <div class="flex-1 min-w-0">
+                    <p class="text-sm font-semibold text-zinc-800 truncate"><%= product.name %></p>
+                    <p class="text-[10px] text-zinc-400 uppercase tracking-wide"><%= product.category.name %></p>
+                  </div>
+                  <%= if variant do %>
+                    <span class="text-sm font-bold text-zinc-900 flex-shrink-0">
+                      KSh <%= format_money(variant.price) %>
+                    </span>
+                  <% end %>
+                </a>
+              <% end %>
+              <a href={"/shop?q=#{URI.encode(@search_query)}"} class="flex items-center justify-center gap-2 px-4 py-3 bg-zinc-50 text-xs font-bold text-amber-600 uppercase tracking-widest hover:bg-amber-50 transition">
+                See all results for "<%= @search_query %>"
+                <svg class="w-3.5 h-3.5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2.5">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M9 5l7 7-7 7"/>
+                </svg>
+              </a>
+            </div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
     <.hero_section
       main_label={@hero_main_label}
       main_title={@hero_main_title}
