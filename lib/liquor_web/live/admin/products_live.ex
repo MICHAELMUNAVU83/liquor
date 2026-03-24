@@ -717,7 +717,20 @@ defmodule LiquorWeb.Admin.ProductsLive do
                     </div>
                     <div>
                       <label class="block text-xs font-semibold text-gray-500 mb-1">
-                        Price (KES) *
+                        Buying Price (KES)
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        name="variant[buying_price]"
+                        value={Phoenix.HTML.Form.input_value(@variant_form, :buying_price)}
+                        placeholder="0.00"
+                        class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                      />
+                    </div>
+                    <div>
+                      <label class="block text-xs font-semibold text-gray-500 mb-1">
+                        Selling Price (KES) *
                       </label>
                       <input
                         type="number"
@@ -744,6 +757,8 @@ defmodule LiquorWeb.Admin.ProductsLive do
                         class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                       />
                     </div>
+                  </div>
+                  <div class="grid grid-cols-2 sm:grid-cols-4 gap-4">
                     <div>
                       <label class="block text-xs font-semibold text-gray-500 mb-1">ABV (%)</label>
                       <input
@@ -852,10 +867,10 @@ defmodule LiquorWeb.Admin.ProductsLive do
                     ABV
                   </p>
                   <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Price
+                    Buy Price
                   </p>
                   <p class="col-span-2 text-[10px] font-bold uppercase tracking-widest text-gray-400">
-                    Compare
+                    Sell Price
                   </p>
                   <p class="col-span-1 text-[10px] font-bold uppercase tracking-widest text-gray-400">
                     Stock
@@ -885,12 +900,16 @@ defmodule LiquorWeb.Admin.ProductsLive do
                     <p class="col-span-1 text-sm text-gray-600">
                       {if v.abv, do: "#{v.abv}%", else: "—"}
                     </p>
-                    <p class="col-span-2 text-sm font-bold text-gray-900">
-                      KSh {format_money(v.price)}
-                    </p>
-                    <p class="col-span-2 text-sm text-gray-400">
-                      {if v.compare_price, do: "KSh #{format_money(v.compare_price)}", else: "—"}
-                    </p>
+                    <div class="col-span-2">
+                      <p class="text-sm text-blue-700">{if v.buying_price, do: "KSh #{format_money(v.buying_price)}", else: "—"}</p>
+                    </div>
+                    <div class="col-span-2">
+                      <p class="text-sm font-bold text-gray-900">KSh {format_money(v.price)}</p>
+                      <%= if v.buying_price do %>
+                        <% margin = Decimal.sub(v.price, v.buying_price) %>
+                        <p class="text-[10px] text-emerald-600 font-semibold">+KSh {format_money(margin)}</p>
+                      <% end %>
+                    </div>
                     <p class={[
                       "col-span-1 text-sm font-bold",
                       cond do

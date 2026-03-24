@@ -54,10 +54,11 @@ defmodule LiquorWeb.Router do
     pipe_through [:browser, :require_admin_user]
 
     get "/receipt/:id",         ReceiptController, :show
-    get "/reports/download/sales",    ReportController, :sales
-    get "/reports/download/expenses", ReportController, :expenses
-    get "/reports/download/cash",     ReportController, :cash
-    get "/reports/download/stock",    ReportController, :stock
+    get "/reports/download/sales",     ReportController, :sales
+    get "/reports/download/expenses",  ReportController, :expenses
+    get "/reports/download/cash",      ReportController, :cash
+    get "/reports/download/stock",     ReportController, :stock
+    get "/reports/download/purchases", ReportController, :purchases
 
     # All roles: dashboard + help
     live_session :admin_all,

@@ -79,6 +79,19 @@ defmodule Liquor.Expenses do
     |> Enum.sort_by(&Decimal.to_float(&1.total), :desc)
   end
 
+  def list_stock_purchases_in_range(from_date, to_date) do
+    Expense
+    |> where([e], e.category == "stock_restock" and e.expense_date >= ^from_date and e.expense_date <= ^to_date)
+    |> order_by([e], desc: e.expense_date)
+    |> Repo.all()
+  end
+
+  def total_stock_purchases_in_range(from_date, to_date) do
+    Expense
+    |> where([e], e.category == "stock_restock" and e.expense_date >= ^from_date and e.expense_date <= ^to_date)
+    |> Repo.aggregate(:sum, :amount) || Decimal.new("0")
+  end
+
   def monthly_expenses_last_6 do
     today         = Date.utc_today()
     six_months_ago = Date.add(Date.beginning_of_month(today), -150)

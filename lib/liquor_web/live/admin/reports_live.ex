@@ -3,6 +3,8 @@ defmodule LiquorWeb.Admin.ReportsLive do
 
   alias Liquor.{Orders, Expenses, Catalog, Cash}
 
+  defp zero, do: Decimal.new("0")
+
   @impl true
   def mount(_params, _session, socket) do
     today = Date.utc_today()
@@ -114,12 +116,34 @@ defmodule LiquorWeb.Admin.ReportsLive do
     depleted         = Catalog.zero_stock_variants()
     low_stock        = Catalog.low_stock_variants(5)
     stock_value      = Catalog.total_stock_value()
+    cost_value       = Enum.reduce(all_variants, zero(), fn v, acc ->
+      if v.buying_price do
+        Decimal.add(acc, Decimal.mult(v.buying_price, Decimal.new(v.stock_quantity)))
+      else
+        acc
+      end
+    end)
 
     assign(socket,
       stock_variants: all_variants,
       stock_depleted: depleted,
       stock_low:      low_stock,
-      stock_value:    stock_value
+      stock_value:    stock_value,
+      stock_cost_value: cost_value
+    )
+  end
+
+  defp load_tab(socket, "purchases", from, to) do
+    purchases      = Expenses.list_stock_purchases_in_range(from, to)
+    total_cost     = Expenses.total_stock_purchases_in_range(from, to)
+    total_revenue  = Orders.revenue_in_range(from, to)
+    gross_profit   = Decimal.sub(total_revenue, total_cost)
+
+    assign(socket,
+      purchase_list:    purchases,
+      purchase_total:   total_cost,
+      purchase_revenue: total_revenue,
+      purchase_profit:  gross_profit
     )
   end
 
@@ -221,10 +245,11 @@ defmodule LiquorWeb.Admin.ReportsLive do
       <!-- ── Tab navigation ──────────────────────────────────────────────── -->
       <div class="flex gap-1 mb-6 bg-gray-100 rounded-xl p-1 w-fit">
         <%= for {label, key, icon} <- [
-          {"Sales",         "sales",    "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"},
-          {"Expenses",      "expenses", "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"},
-          {"Cash Registry", "cash",     "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"},
-          {"Stock",         "stock",    "M20 7l-8-4-8 4m16 0v10l-8 4m0-14v14m0 0l-8-4V7"}
+          {"Sales",         "sales",     "M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"},
+          {"Purchases",     "purchases", "M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z"},
+          {"Expenses",      "expenses",  "M17 9V7a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2m2 4h10a2 2 0 002-2v-6a2 2 0 00-2-2H9a2 2 0 00-2 2v6a2 2 0 002 2zm7-5a2 2 0 11-4 0 2 2 0 014 0z"},
+          {"Cash Registry", "cash",      "M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10"},
+          {"Stock",         "stock",     "M20 7l-8-4-8 4m16 0v10l-8 4m0-14v14m0 0l-8-4V7"}
         ] do %>
           <button
             phx-click="switch_tab"
@@ -611,6 +636,94 @@ defmodule LiquorWeb.Admin.ReportsLive do
         </div>
 
       <!-- ════════════════════════════════════════════════════════════════
+           PURCHASES TAB
+      ════════════════════════════════════════════════════════════════ -->
+      <% end %>
+      <%= if @report_tab == "purchases" do %>
+        <!-- KPIs -->
+        <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+          <div class="bg-white border border-gray-200 rounded-xl p-5">
+            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Total Bought (Cost)</p>
+            <p class="text-2xl font-black text-blue-600">KSh <%= format_money(@purchase_total) %></p>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-xl p-5">
+            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Total Revenue (Sales)</p>
+            <p class="text-2xl font-black text-amber-600">KSh <%= format_money(@purchase_revenue) %></p>
+          </div>
+          <div class={[
+            "border rounded-xl p-5",
+            if(Decimal.compare(@purchase_profit, Decimal.new("0")) == :gt,
+              do: "bg-emerald-50 border-emerald-200",
+              else: "bg-red-50 border-red-200")
+          ]}>
+            <p class={["text-xs font-bold uppercase tracking-widest mb-1",
+              if(Decimal.compare(@purchase_profit, Decimal.new("0")) == :gt,
+                do: "text-emerald-500", else: "text-red-400")]}>
+              Gross Profit
+            </p>
+            <p class={["text-2xl font-black",
+              if(Decimal.compare(@purchase_profit, Decimal.new("0")) == :gt,
+                do: "text-emerald-600", else: "text-red-600")]}>
+              KSh <%= format_money(@purchase_profit) %>
+            </p>
+          </div>
+          <div class="bg-white border border-gray-200 rounded-xl p-5">
+            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Purchase Records</p>
+            <p class="text-2xl font-black text-gray-900"><%= length(@purchase_list) %></p>
+          </div>
+        </div>
+
+        <!-- Purchase records table -->
+        <div class="bg-white border border-gray-200 rounded-xl overflow-hidden">
+          <div class="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+            <h2 class="font-bold text-gray-900 text-sm">Stock Purchase History</h2>
+            <a
+              href={"/admin/reports/download/purchases?from=#{@date_from}&to=#{@date_to}"}
+              target="_blank"
+              class="flex items-center gap-1 text-xs font-semibold text-gray-500 hover:text-gray-700 border border-gray-200 rounded-lg px-2.5 py-1.5 transition"
+            >
+              <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"/>
+              </svg>
+              Download CSV
+            </a>
+          </div>
+          <div class="overflow-x-auto">
+            <table class="w-full text-sm">
+              <thead class="bg-gray-50 border-b border-gray-100">
+                <tr>
+                  <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Date</th>
+                  <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Product</th>
+                  <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">SKU</th>
+                  <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</th>
+                  <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit Cost</th>
+                  <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Total Cost</th>
+                  <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Notes</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-gray-100">
+                <%= if @purchase_list == [] do %>
+                  <tr><td colspan="7" class="px-5 py-10 text-center text-sm text-gray-400">No purchase records in this period. Stock restocks are recorded via Inventory → adjust stock.</td></tr>
+                <% end %>
+                <%= for p <- @purchase_list do %>
+                  <tr class="hover:bg-gray-50 transition">
+                    <td class="px-5 py-3 text-gray-500 text-xs"><%= Date.to_string(p.expense_date) %></td>
+                    <td class="px-5 py-3 font-medium text-gray-800"><%= p.product_name || p.description %></td>
+                    <td class="px-5 py-3 font-mono text-xs text-gray-400"><%= p.variant_sku || "—" %></td>
+                    <td class="px-5 py-3 text-right text-gray-700"><%= p.quantity || "—" %></td>
+                    <td class="px-5 py-3 text-right text-gray-600">
+                      <%= if p.unit_cost, do: "KSh #{format_money(p.unit_cost)}", else: "—" %>
+                    </td>
+                    <td class="px-5 py-3 text-right font-semibold text-blue-700">KSh <%= format_money(p.amount) %></td>
+                    <td class="px-5 py-3 text-xs text-gray-400"><%= p.notes || "—" %></td>
+                  </tr>
+                <% end %>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      <!-- ════════════════════════════════════════════════════════════════
            STOCK TAB
       ════════════════════════════════════════════════════════════════ -->
       <% end %>
@@ -618,12 +731,13 @@ defmodule LiquorWeb.Admin.ReportsLive do
         <!-- KPIs -->
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
           <div class="bg-white border border-gray-200 rounded-xl p-5">
-            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Stock Value</p>
+            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Sell Value (at price)</p>
             <p class="text-2xl font-black text-blue-600">KSh <%= format_money(@stock_value) %></p>
           </div>
           <div class="bg-white border border-gray-200 rounded-xl p-5">
-            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Total SKUs</p>
-            <p class="text-2xl font-black text-gray-900"><%= length(@stock_variants) %></p>
+            <p class="text-xs font-bold uppercase tracking-widest text-gray-400 mb-1">Cost Value (at buy price)</p>
+            <p class="text-2xl font-black text-gray-700">KSh <%= format_money(@stock_cost_value) %></p>
+            <p class="text-xs text-gray-400 mt-1">variants with buying price set</p>
           </div>
           <div class="bg-amber-50 border border-amber-200 rounded-xl p-5">
             <p class="text-xs font-bold uppercase tracking-widest text-amber-500 mb-1">Low Stock</p>
@@ -738,7 +852,9 @@ defmodule LiquorWeb.Admin.ReportsLive do
                   <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Product</th>
                   <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">SKU</th>
                   <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Size</th>
-                  <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit Price</th>
+                  <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Buy Price</th>
+                  <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Sell Price</th>
+                  <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Margin</th>
                   <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</th>
                   <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Stock Value</th>
                   <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
@@ -749,7 +865,7 @@ defmodule LiquorWeb.Admin.ReportsLive do
                   visible = filter_stock(@stock_variants, @stock_search, @stock_filter)
                 %>
                 <%= if visible == [] do %>
-                  <tr><td colspan="7" class="px-5 py-10 text-center text-sm text-gray-400">No variants match</td></tr>
+                  <tr><td colspan="9" class="px-5 py-10 text-center text-sm text-gray-400">No variants match</td></tr>
                 <% end %>
                 <%= for v <- visible do %>
                   <% stock_val = Decimal.mult(v.price, Decimal.new(v.stock_quantity)) %>
@@ -757,7 +873,21 @@ defmodule LiquorWeb.Admin.ReportsLive do
                     <td class="px-5 py-3 font-medium text-gray-800"><%= v.product.name %></td>
                     <td class="px-5 py-3 font-mono text-xs text-gray-400"><%= v.sku || "—" %></td>
                     <td class="px-5 py-3 text-gray-500 text-xs"><%= v.size || "—" %></td>
+                    <td class="px-5 py-3 text-right text-blue-600">
+                      <%= if v.buying_price, do: "KSh #{format_money(v.buying_price)}", else: "—" %>
+                    </td>
                     <td class="px-5 py-3 text-right text-gray-600">KSh <%= format_money(v.price) %></td>
+                    <td class="px-5 py-3 text-right">
+                      <%= if v.buying_price do %>
+                        <% margin = Decimal.sub(v.price, v.buying_price) %>
+                        <% pct = Decimal.mult(Decimal.div(margin, v.buying_price), Decimal.new(100)) %>
+                        <span class="text-xs font-semibold text-emerald-600">
+                          +KSh <%= format_money(margin) %> (<%= Decimal.round(pct, 0) %>%)
+                        </span>
+                      <% else %>
+                        <span class="text-xs text-gray-300">—</span>
+                      <% end %>
+                    </td>
                     <td class={[
                       "px-5 py-3 text-right font-bold",
                       cond do

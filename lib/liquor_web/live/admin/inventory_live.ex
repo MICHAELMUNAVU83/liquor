@@ -69,7 +69,7 @@ defmodule LiquorWeb.Admin.InventoryLive do
               expense_modal: %{
                 variant: variant,
                 qty_added: added,
-                unit_cost: ""
+                unit_cost: if(variant.buying_price, do: Decimal.to_string(variant.buying_price), else: "")
               }
             )
           else

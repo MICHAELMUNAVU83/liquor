@@ -3,6 +3,9 @@ defmodule LiquorWeb.Admin.ReportController do
 
   alias Liquor.{Orders, Expenses, Catalog, Cash}
 
+  defp format_money(nil), do: "0.00"
+  defp format_money(d), do: Decimal.to_string(Decimal.round(d, 2))
+
   # ── Shared date parsing ────────────────────────────────────────────────────
 
   defp parse_range(params) do
@@ -111,9 +114,18 @@ defmodule LiquorWeb.Admin.ReportController do
     variants = Catalog.list_all_variants()
 
     rows =
-      [["Product", "SKU", "Size", "Stock Qty", "Unit Price (KSh)", "Stock Value (KSh)", "Status"]] ++
+      [["Product", "SKU", "Size", "Stock Qty", "Buying Price (KSh)", "Selling Price (KSh)", "Margin (KSh)", "Margin %", "Stock Value (KSh)", "Stock Cost (KSh)", "Status"]] ++
       Enum.map(variants, fn v ->
-        value  = Decimal.mult(v.price, Decimal.new(v.stock_quantity))
+        sell_value = Decimal.mult(v.price, Decimal.new(v.stock_quantity))
+        {buy_price_str, margin_str, margin_pct_str, cost_value_str} =
+          if v.buying_price do
+            margin     = Decimal.sub(v.price, v.buying_price)
+            margin_pct = Decimal.mult(Decimal.div(margin, v.buying_price), Decimal.new(100))
+            cost_val   = Decimal.mult(v.buying_price, Decimal.new(v.stock_quantity))
+            {format_money(v.buying_price), format_money(margin), "#{Decimal.round(margin_pct, 1)}%", format_money(cost_val)}
+          else
+            {"—", "—", "—", "—"}
+          end
         status = cond do
           v.stock_quantity == 0   -> "Out of Stock"
           v.stock_quantity <= 5   -> "Low Stock"
@@ -124,8 +136,12 @@ defmodule LiquorWeb.Admin.ReportController do
           v.sku || "—",
           v.size || "—",
           v.stock_quantity,
-          Decimal.to_string(v.price),
-          Decimal.to_string(value),
+          buy_price_str,
+          format_money(v.price),
+          margin_str,
+          margin_pct_str,
+          format_money(sell_value),
+          cost_value_str,
           status
         ]
       end)
@@ -135,6 +151,43 @@ defmodule LiquorWeb.Admin.ReportController do
     conn
     |> put_resp_content_type("text/csv")
     |> put_resp_header("content-disposition", ~s(attachment; filename="stock_report.csv"))
+    |> send_resp(200, csv)
+  end
+
+  # ── Purchases CSV ──────────────────────────────────────────────────────────
+
+  def purchases(conn, params) do
+    {from, to} = parse_range(params)
+    purchases   = Expenses.list_stock_purchases_in_range(from, to)
+    total_cost  = Expenses.total_stock_purchases_in_range(from, to)
+    total_rev   = Orders.revenue_in_range(from, to)
+    gross_profit = Decimal.sub(total_rev, total_cost)
+
+    rows =
+      [["Date", "Product", "SKU", "Qty", "Unit Cost (KSh)", "Total Cost (KSh)", "Notes"]] ++
+      Enum.map(purchases, fn p ->
+        [
+          Date.to_string(p.expense_date),
+          p.product_name || p.description,
+          p.variant_sku || "—",
+          p.quantity || "—",
+          if(p.unit_cost, do: format_money(p.unit_cost), else: "—"),
+          format_money(p.amount),
+          p.notes || ""
+        ]
+      end) ++
+      [
+        [],
+        ["", "TOTAL PURCHASE COST", "", "", "", format_money(total_cost), ""],
+        ["", "TOTAL SALES REVENUE", "", "", "", format_money(total_rev), ""],
+        ["", "GROSS PROFIT", "", "", "", format_money(gross_profit), ""]
+      ]
+
+    csv = to_csv(rows)
+
+    conn
+    |> put_resp_content_type("text/csv")
+    |> put_resp_header("content-disposition", ~s(attachment; filename="purchases_#{from}_#{to}.csv"))
     |> send_resp(200, csv)
   end
 

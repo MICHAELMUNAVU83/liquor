@@ -8,6 +8,7 @@ defmodule Liquor.Catalog.ProductVariant do
     field :abv,            :decimal
     field :price,          :decimal
     field :compare_price,  :decimal
+    field :buying_price,   :decimal
     field :stock_quantity, :integer, default: 0
     field :is_default,     :boolean, default: false
 
@@ -18,7 +19,7 @@ defmodule Liquor.Catalog.ProductVariant do
 
   def changeset(variant, attrs) do
     variant
-    |> cast(attrs, [:sku, :size, :abv, :price, :compare_price,
+    |> cast(attrs, [:sku, :size, :abv, :price, :compare_price, :buying_price,
                     :stock_quantity, :is_default, :product_id])
     |> validate_required([:size, :price, :product_id])
     |> maybe_generate_sku()

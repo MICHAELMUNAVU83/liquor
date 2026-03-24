@@ -182,6 +182,7 @@ products_data = [
         abv: "40.0",
         price: "3500",
         compare_price: "3999",
+        buying_price: "2500",
         stock_quantity: 150,
         is_default: true,
         sku: "JAM-700ML"
@@ -191,6 +192,7 @@ products_data = [
         abv: "40.0",
         price: "4800",
         compare_price: "5299",
+        buying_price: "3400",
         stock_quantity: 80,
         is_default: false,
         sku: "JAM-1L"
@@ -200,6 +202,7 @@ products_data = [
         abv: "40.0",
         price: "6500",
         compare_price: "7199",
+        buying_price: "4600",
         stock_quantity: 60,
         is_default: false,
         sku: "JAM-175L"
@@ -223,6 +226,7 @@ products_data = [
         size: "700ML",
         abv: "40.0",
         price: "3200",
+        buying_price: "2200",
         stock_quantity: 200,
         is_default: true,
         sku: "JD-700ML"
@@ -231,6 +235,7 @@ products_data = [
         size: "1L",
         abv: "40.0",
         price: "4200",
+        buying_price: "2900",
         stock_quantity: 120,
         is_default: false,
         sku: "JD-1L"
@@ -239,6 +244,7 @@ products_data = [
         size: "1.75L",
         abv: "40.0",
         price: "5800",
+        buying_price: "4000",
         stock_quantity: 75,
         is_default: false,
         sku: "JD-175L"
@@ -261,6 +267,7 @@ products_data = [
         size: "700ML",
         abv: "40.0",
         price: "4500",
+        buying_price: "3200",
         stock_quantity: 90,
         is_default: true,
         sku: "JWB-700ML"
@@ -269,6 +276,7 @@ products_data = [
         size: "1L",
         abv: "40.0",
         price: "5800",
+        buying_price: "4100",
         stock_quantity: 55,
         is_default: false,
         sku: "JWB-1L"
@@ -291,6 +299,7 @@ products_data = [
         size: "700ML",
         abv: "40.0",
         price: "6000",
+        buying_price: "4500",
         stock_quantity: 70,
         is_default: true,
         sku: "HVS-700ML"
@@ -299,6 +308,7 @@ products_data = [
         size: "1L",
         abv: "40.0",
         price: "7800",
+        buying_price: "5800",
         stock_quantity: 40,
         is_default: false,
         sku: "HVS-1L"
@@ -322,6 +332,7 @@ products_data = [
         abv: "40.0",
         price: "6500",
         compare_price: "7299",
+        buying_price: "4800",
         stock_quantity: 60,
         is_default: true,
         sku: "PAT-SLV-700ML"
@@ -331,6 +342,7 @@ products_data = [
         abv: "40.0",
         price: "11500",
         compare_price: "12499",
+        buying_price: "8500",
         stock_quantity: 30,
         is_default: false,
         sku: "PAT-SLV-175L"
@@ -353,6 +365,7 @@ products_data = [
         size: "700ML",
         abv: "40.0",
         price: "5500",
+        buying_price: "4000",
         stock_quantity: 100,
         is_default: true,
         sku: "GG-700ML"
@@ -361,6 +374,7 @@ products_data = [
         size: "1L",
         abv: "40.0",
         price: "7200",
+        buying_price: "5200",
         stock_quantity: 65,
         is_default: false,
         sku: "GG-1L"
@@ -369,6 +383,7 @@ products_data = [
         size: "1.75L",
         abv: "40.0",
         price: "9500",
+        buying_price: "6900",
         stock_quantity: 40,
         is_default: false,
         sku: "GG-175L"
@@ -391,6 +406,7 @@ products_data = [
         size: "700ML",
         abv: "37.5",
         price: "2500",
+        buying_price: "1700",
         stock_quantity: 180,
         is_default: true,
         sku: "BAC-700ML"
@@ -399,6 +415,7 @@ products_data = [
         size: "1L",
         abv: "37.5",
         price: "3200",
+        buying_price: "2200",
         stock_quantity: 110,
         is_default: false,
         sku: "BAC-1L"
@@ -421,6 +438,7 @@ products_data = [
         size: "700ML",
         abv: "43.1",
         price: "3500",
+        buying_price: "2400",
         stock_quantity: 95,
         is_default: true,
         sku: "TAN-700ML"
@@ -429,6 +447,7 @@ products_data = [
         size: "1L",
         abv: "43.1",
         price: "4500",
+        buying_price: "3100",
         stock_quantity: 60,
         is_default: false,
         sku: "TAN-1L"
@@ -451,6 +470,7 @@ products_data = [
         size: "700ML",
         abv: "45.0",
         price: "4200",
+        buying_price: "3000",
         stock_quantity: 55,
         is_default: true,
         sku: "BT-700ML"
@@ -459,6 +479,7 @@ products_data = [
         size: "1.75L",
         abv: "45.0",
         price: "7800",
+        buying_price: "5500",
         stock_quantity: 25,
         is_default: false,
         sku: "BT-175L"
@@ -483,6 +504,7 @@ products_data = [
         abv: "40.0",
         price: "5500",
         compare_price: "6299",
+        buying_price: "3900",
         stock_quantity: 45,
         is_default: true,
         sku: "GV12-700ML"
@@ -492,6 +514,7 @@ products_data = [
         abv: "40.0",
         price: "7200",
         compare_price: "7999",
+        buying_price: "5100",
         stock_quantity: 20,
         is_default: false,
         sku: "GV12-1L"
@@ -514,6 +537,7 @@ products_data = [
         size: "700ML",
         abv: "40.0",
         price: "2800",
+        buying_price: "1900",
         stock_quantity: 200,
         is_default: true,
         sku: "JB-700ML"
@@ -522,6 +546,7 @@ products_data = [
         size: "1L",
         abv: "40.0",
         price: "3600",
+        buying_price: "2500",
         stock_quantity: 140,
         is_default: false,
         sku: "JB-1L"
@@ -530,6 +555,7 @@ products_data = [
         size: "1.75L",
         abv: "40.0",
         price: "5200",
+        buying_price: "3600",
         stock_quantity: 80,
         is_default: false,
         sku: "JB-175L"
@@ -553,6 +579,7 @@ products_data = [
         size: "700ML",
         abv: "40.0",
         price: "6999",
+        buying_price: "5100",
         stock_quantity: 50,
         is_default: true,
         sku: "PAT-REP-700ML"
