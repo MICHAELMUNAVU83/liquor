@@ -2,6 +2,8 @@ defmodule Liquor.Accounts.User do
   use Ecto.Schema
   import Ecto.Changeset
 
+  alias Liquor.Accounts.Permissions
+
   schema "users" do
     field :email, :string
     field :password, :string, virtual: true
@@ -9,7 +11,7 @@ defmodule Liquor.Accounts.User do
     field :first_name, :string
     field :last_name, :string
     field :phone, :string
-    field :is_admin, :boolean, default: false
+    field :role, :string
     field :is_active, :boolean, default: true
 
     has_many :addresses, Liquor.Accounts.Address
@@ -21,20 +23,22 @@ defmodule Liquor.Accounts.User do
 
   def changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :password, :first_name, :last_name, :phone, :is_admin, :is_active])
+    |> cast(attrs, [:email, :password, :first_name, :last_name, :phone, :role, :is_active])
     |> validate_required([:email, :password])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
     |> unique_constraint(:email)
     |> validate_length(:password, min: 6)
+    |> validate_inclusion(:role, Permissions.roles(), message: "is not a valid role")
     |> hash_password()
   end
 
   def admin_changeset(user, attrs) do
     user
-    |> cast(attrs, [:email, :first_name, :last_name, :phone, :is_admin, :is_active])
+    |> cast(attrs, [:email, :first_name, :last_name, :phone, :role, :is_active])
     |> validate_required([:email])
     |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/)
     |> unique_constraint(:email)
+    |> validate_inclusion(:role, Permissions.roles(), message: "is not a valid role")
   end
 
   def customer_changeset(user, attrs) do
@@ -48,6 +52,9 @@ defmodule Liquor.Accounts.User do
           cs |> validate_format(:email, ~r/^[^\s]+@[^\s]+\.[^\s]+$/) |> unique_constraint(:email)
     end)
   end
+
+  @doc "Returns true if the user has any admin role assigned."
+  def admin?(%__MODULE__{role: role}), do: not is_nil(role)
 
   defp hash_password(%Ecto.Changeset{valid?: true, changes: %{password: pw}} = cs) do
     put_change(cs, :password_hash, :crypto.hash(:sha256, pw) |> Base.encode16(case: :lower))

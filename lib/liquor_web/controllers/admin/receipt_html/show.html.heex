@@ -1,0 +1,378 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Receipt #{@order.id} — {@receipt_settings.store_name}</title>
+    <style>
+      * { box-sizing: border-box; margin: 0; padding: 0; }
+
+      body {
+        background: #f0f0f0;
+        font-family: 'Courier New', Courier, monospace;
+        font-size: 13px;
+        color: #1a1a1a;
+      }
+
+      /* ── Wrapper ── */
+      .page {
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        padding: 40px 16px 60px;
+        min-height: 100vh;
+      }
+
+      /* ── Action bar (hidden when printing) ── */
+      .action-bar {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 24px;
+      }
+
+      .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        padding: 9px 20px;
+        border-radius: 8px;
+        font-size: 13px;
+        font-weight: 700;
+        cursor: pointer;
+        border: none;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        text-decoration: none;
+      }
+
+      .btn-print {
+        background: #1a1a1a;
+        color: #fff;
+      }
+
+      .btn-back {
+        background: #fff;
+        color: #374151;
+        border: 1.5px solid #e5e7eb;
+      }
+
+      /* ── Receipt paper ── */
+      .receipt {
+        background: #fff;
+        width: 100%;
+        max-width: 360px;
+        padding: 32px 28px 28px;
+        box-shadow: 0 4px 24px rgba(0,0,0,0.10), 0 1px 4px rgba(0,0,0,0.06);
+        border-radius: 4px;
+        /* Subtle paper texture via gradient */
+        background-image: repeating-linear-gradient(
+          0deg,
+          transparent,
+          transparent 27px,
+          rgba(0,0,0,0.018) 27px,
+          rgba(0,0,0,0.018) 28px
+        );
+      }
+
+      /* ── Header ── */
+      .receipt-header {
+        text-align: center;
+        margin-bottom: 18px;
+      }
+
+      .receipt-logo {
+        height: 52px;
+        width: auto;
+        object-fit: contain;
+        margin-bottom: 10px;
+        display: block;
+        margin-left: auto;
+        margin-right: auto;
+      }
+
+      .store-name {
+        font-size: 15px;
+        font-weight: 900;
+        letter-spacing: 0.08em;
+        text-transform: uppercase;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      .store-sub {
+        font-size: 11px;
+        color: #6b7280;
+        margin-top: 3px;
+        line-height: 1.5;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      /* ── Dividers ── */
+      .divider {
+        border: none;
+        border-top: 1px dashed #d1d5db;
+        margin: 14px 0;
+      }
+
+      .divider-solid {
+        border: none;
+        border-top: 1.5px solid #1a1a1a;
+        margin: 14px 0;
+      }
+
+      /* ── Meta row (date / receipt #) ── */
+      .meta-row {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        font-size: 11.5px;
+        color: #374151;
+        line-height: 1.7;
+      }
+
+      .meta-right {
+        text-align: right;
+      }
+
+      .receipt-num {
+        font-size: 15px;
+        font-weight: 900;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+        color: #1a1a1a;
+      }
+
+      /* ── Customer row ── */
+      .customer-row {
+        font-size: 11.5px;
+        color: #374151;
+      }
+
+      /* ── Items table ── */
+      .items-table {
+        width: 100%;
+        border-collapse: collapse;
+        font-size: 12px;
+      }
+
+      .items-table thead th {
+        font-size: 10px;
+        font-weight: 800;
+        letter-spacing: 0.07em;
+        text-transform: uppercase;
+        padding: 0 0 6px;
+        border-bottom: 1px solid #1a1a1a;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      .items-table thead th:first-child { text-align: left; width: 28px; }
+      .items-table thead th:nth-child(2) { text-align: left; }
+      .items-table thead th:nth-child(3) { text-align: right; width: 52px; }
+      .items-table thead th:last-child   { text-align: right; width: 58px; }
+
+      .items-table tbody td {
+        padding: 5px 0;
+        vertical-align: top;
+      }
+
+      .items-table tbody td:first-child  { text-align: left; color: #6b7280; }
+      .items-table tbody td:nth-child(2) { text-align: left; }
+      .items-table tbody td:nth-child(3) { text-align: right; color: #6b7280; }
+      .items-table tbody td:last-child   { text-align: right; font-weight: 700; }
+
+      .item-name  { font-weight: 600; line-height: 1.3; }
+      .item-sub   { font-size: 10px; color: #9ca3af; margin-top: 1px; }
+
+      .items-table tbody tr + tr td {
+        border-top: 1px dashed #f3f4f6;
+      }
+
+      /* ── Totals ── */
+      .totals {
+        width: 100%;
+        font-size: 12px;
+      }
+
+      .totals .row {
+        display: flex;
+        justify-content: space-between;
+        padding: 3px 0;
+        color: #6b7280;
+      }
+
+      .totals .row-total {
+        display: flex;
+        justify-content: space-between;
+        padding: 8px 0 0;
+        font-size: 15px;
+        font-weight: 900;
+        color: #1a1a1a;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      .payment-badge {
+        display: inline-block;
+        font-size: 10px;
+        font-weight: 700;
+        letter-spacing: 0.06em;
+        text-transform: uppercase;
+        background: #f3f4f6;
+        color: #374151;
+        padding: 3px 8px;
+        border-radius: 999px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      /* ── Footer ── */
+      .receipt-footer {
+        text-align: center;
+        font-size: 11px;
+        color: #6b7280;
+        line-height: 1.7;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      .thank-you {
+        font-size: 13px;
+        font-weight: 700;
+        color: #1a1a1a;
+        margin-bottom: 4px;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      }
+
+      /* ── Print styles ── */
+      @media print {
+        body { background: white; }
+        .page { padding: 0; min-height: unset; }
+        .action-bar { display: none !important; }
+        .receipt {
+          box-shadow: none;
+          border-radius: 0;
+          max-width: 100%;
+          background-image: none;
+          padding: 16px;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="page">
+      
+<!-- Action bar -->
+      <div class="action-bar">
+        <a href="javascript:history.back()" class="btn btn-back">
+          ← Back
+        </a>
+        <button class="btn btn-print" onclick="window.print()">
+          &#128438; Print Receipt
+        </button>
+      </div>
+      
+<!-- Receipt paper -->
+      <div class="receipt">
+        
+<!-- Store header -->
+        <div class="receipt-header">
+          <img src="/images/logo.png" alt="Logo" class="receipt-logo" />
+          <div class="store-name">{@receipt_settings.store_name}</div>
+          <div class="store-sub">
+            {@receipt_settings.store_address}<br /> Mobile: {@receipt_settings.store_phone}
+            <%= if @receipt_settings.store_till_number not in [nil, ""] do %>
+              <br />Till No: {@receipt_settings.store_till_number}
+            <% end %>
+          </div>
+        </div>
+
+        <hr class="divider-solid" />
+        
+<!-- Receipt meta -->
+        <div class="meta-row">
+          <div>
+            <div>Date: {Calendar.strftime(@order.inserted_at, "%d/%m/%Y")}</div>
+            <div>Time: {Calendar.strftime(@order.inserted_at, "%H:%M:%S")}</div>
+            <%= if @order.user do %>
+              <div style="margin-top:4px">
+                Customer: <strong>{@order.user.first_name} {@order.user.last_name}</strong>
+              </div>
+            <% end %>
+            <%= if @order.payment_method do %>
+              <div style="margin-top:4px">
+                <span class="payment-badge">{@order.payment_method}</span>
+              </div>
+            <% end %>
+          </div>
+          <div class="meta-right">
+            <div style="font-size:10px; font-weight:700; letter-spacing:0.07em; text-transform:uppercase; color:#9ca3af; margin-bottom:2px;">
+              RECEIPT
+            </div>
+            <div class="receipt-num">#{@order.id}</div>
+          </div>
+        </div>
+
+        <hr class="divider" />
+        
+<!-- Items -->
+        <table class="items-table">
+          <thead>
+            <tr>
+              <th>Qty</th>
+              <th>Item</th>
+              <th>Price</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <%= for item <- @order.items do %>
+              <tr>
+                <td>{item.quantity}</td>
+                <td>
+                  <div class="item-name">{String.upcase(item.product_name)}</div>
+                  <%= if item.variant_size && item.variant_size != "" do %>
+                    <div class="item-sub">{item.variant_size}</div>
+                  <% end %>
+                </td>
+                <td>{format_money(item.unit_price)}</td>
+                <td>{format_money(item.subtotal)}</td>
+              </tr>
+            <% end %>
+          </tbody>
+        </table>
+
+        <hr class="divider-solid" />
+        
+<!-- Totals -->
+        <div class="totals">
+          <%= if @order.discount_amount && Decimal.compare(@order.discount_amount, Decimal.new("0")) != :eq do %>
+            <div class="row">
+              <span>Discount</span>
+              <span>-KSh {format_money(@order.discount_amount)}</span>
+            </div>
+          <% end %>
+          <div class="row-total">
+            <span>Total Amount</span>
+            <span>KSh {format_money(@order.total_amount)}</span>
+          </div>
+        </div>
+
+        <hr class="divider" />
+        
+<!-- Footer -->
+        <div class="receipt-footer">
+          <div class="thank-you">Thank You &amp; Welcome Again</div>
+          <%= if @receipt_settings.receipt_delivery_message not in [nil, ""] do %>
+            <div>{@receipt_settings.receipt_delivery_message}</div>
+          <% end %>
+          <%= if @order.notes && @order.notes != "" do %>
+            <div style="margin-top:8px; font-style:italic; color:#9ca3af;">{@order.notes}</div>
+          <% end %>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Auto-print if opened in a new tab
+      if (window.opener || document.referrer === '') {
+        window.addEventListener('load', function() {
+          setTimeout(function() { window.print(); }, 400);
+        });
+      }
+    </script>
+  </body>
+</html>

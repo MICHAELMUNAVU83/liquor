@@ -119,11 +119,83 @@ defmodule Liquor.Orders do
 
   def create_sale(attrs) do
     Repo.transaction(fn ->
+      # Auto-link to active cash register when payment method is cash
+      attrs =
+        if attrs[:payment_method] == "cash" || attrs["payment_method"] == "cash" do
+          case Liquor.Cash.get_active_register() do
+            nil      -> attrs
+            register -> Map.put(attrs, :cash_register_id, register.id)
+          end
+        else
+          attrs
+        end
+
       with {:ok, order} <- create_order(Map.merge(attrs, %{payment_status: "paid", status: "delivered"})) do
         order
       else
         {:error, changeset} -> Repo.rollback(changeset)
       end
+    end)
+  end
+
+  # ---------------------------------------------------------------------------
+  # Report queries (date-range aware)
+  # ---------------------------------------------------------------------------
+
+  def list_orders_in_range(from_date, to_date) do
+    from_dt = DateTime.new!(from_date, ~T[00:00:00], "Etc/UTC")
+    to_dt   = DateTime.new!(to_date,   ~T[23:59:59], "Etc/UTC")
+    from(o in Order,
+      preload: [:user, :items],
+      where: o.payment_status == "paid" and o.inserted_at >= ^from_dt and o.inserted_at <= ^to_dt,
+      order_by: [desc: o.inserted_at]
+    ) |> Repo.all()
+  end
+
+  def revenue_in_range(from_date, to_date) do
+    from_dt = DateTime.new!(from_date, ~T[00:00:00], "Etc/UTC")
+    to_dt   = DateTime.new!(to_date,   ~T[23:59:59], "Etc/UTC")
+    Repo.one(
+      from o in Order,
+        where: o.payment_status == "paid" and o.inserted_at >= ^from_dt and o.inserted_at <= ^to_dt,
+        select: coalesce(sum(o.total_amount), ^Decimal.new("0"))
+    ) || Decimal.new("0")
+  end
+
+  def count_orders_in_range(from_date, to_date) do
+    from_dt = DateTime.new!(from_date, ~T[00:00:00], "Etc/UTC")
+    to_dt   = DateTime.new!(to_date,   ~T[23:59:59], "Etc/UTC")
+    Repo.aggregate(
+      from(o in Order,
+        where: o.payment_status == "paid" and o.inserted_at >= ^from_dt and o.inserted_at <= ^to_dt),
+      :count
+    )
+  end
+
+  def revenue_by_payment_in_range(from_date, to_date) do
+    from_dt = DateTime.new!(from_date, ~T[00:00:00], "Etc/UTC")
+    to_dt   = DateTime.new!(to_date,   ~T[23:59:59], "Etc/UTC")
+    Repo.all(
+      from o in Order,
+        where: o.payment_status == "paid" and o.inserted_at >= ^from_dt and o.inserted_at <= ^to_dt,
+        group_by: o.payment_method,
+        select: {o.payment_method, count(o.id), sum(o.total_amount)}
+    )
+    |> Enum.map(fn {m, c, t} -> %{method: m || "unknown", count: c, total: t || Decimal.new("0")} end)
+  end
+
+  def daily_revenue_in_range(from_date, to_date) do
+    from_dt = DateTime.new!(from_date, ~T[00:00:00], "Etc/UTC")
+    to_dt   = DateTime.new!(to_date,   ~T[23:59:59], "Etc/UTC")
+    Repo.all(
+      from o in Order,
+        where: o.payment_status == "paid" and o.inserted_at >= ^from_dt and o.inserted_at <= ^to_dt,
+        group_by: fragment("date_trunc('day', ?)", o.inserted_at),
+        select: {fragment("date_trunc('day', ?)", o.inserted_at), sum(o.total_amount)},
+        order_by: [asc: fragment("date_trunc('day', ?)", o.inserted_at)]
+    )
+    |> Enum.map(fn {dt, total} ->
+      %{date: NaiveDateTime.to_date(dt), label: Calendar.strftime(dt, "%b %d"), revenue: total || Decimal.new("0")}
     end)
   end
 

@@ -157,6 +157,14 @@ defmodule Liquor.Catalog do
   defp maybe_low_stock_only(q, true),  do: where(q, [v], v.stock_quantity <= 5)
   defp maybe_low_stock_only(q, _),     do: q
 
+  def zero_stock_variants do
+    from(v in ProductVariant,
+      where: v.stock_quantity == 0,
+      preload: :product,
+      order_by: [asc: v.inserted_at]
+    ) |> Repo.all()
+  end
+
   def adjust_stock(%ProductVariant{} = v, qty) do
     new_qty = max(0, v.stock_quantity + qty)
     update_variant(v, %{stock_quantity: new_qty})

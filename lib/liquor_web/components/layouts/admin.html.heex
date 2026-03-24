@@ -1,23 +1,26 @@
 <%
-  commerce_items = [
+  all_commerce_items = [
     %{label: "Dashboard",   href: ~p"/admin",            tab: "dashboard",  icon: :dashboard},
     %{label: "Products",    href: ~p"/admin/products",   tab: "products",   icon: :box},
     %{label: "Categories",  href: ~p"/admin/categories", tab: "categories", icon: :tag},
     %{label: "Brands",      href: ~p"/admin/brands",     tab: "brands",     icon: :building},
     %{label: "Orders",      href: ~p"/admin/orders",     tab: "orders",     icon: :receipt},
   ]
-  erp_items = [
+  all_erp_items = [
     %{label: "Sales",      href: ~p"/admin/sales",      tab: "sales",      icon: :cash},
     %{label: "Expenses",   href: ~p"/admin/expenses",   tab: "expenses",   icon: :expense},
     %{label: "Customers",  href: ~p"/admin/customers",  tab: "customers",  icon: :users},
     %{label: "Inventory",  href: ~p"/admin/inventory",  tab: "inventory",  icon: :warehouse},
     %{label: "Reports",    href: ~p"/admin/reports",    tab: "reports",    icon: :chart},
+    %{label: "Cash Registry", href: ~p"/admin/cash-registry", tab: "cash_registry", icon: :cash_register},
     %{label: "Settings",   href: ~p"/admin/settings",  tab: "settings",  icon: :settings},
     %{label: "Users",      href: ~p"/admin/users",     tab: "users",     icon: :users2},
     %{label: "Help",       href: ~p"/admin/help",      tab: "help",      icon: :help},
   ]
   active = assigns[:active_tab] || ""
   user   = assigns[:current_user]
+  commerce_items = Enum.filter(all_commerce_items, &Liquor.Accounts.Permissions.can?(user, &1.tab))
+  erp_items      = Enum.filter(all_erp_items,      &Liquor.Accounts.Permissions.can?(user, &1.tab))
 %>
 
 <div class="flex h-screen bg-gray-50 overflow-hidden">
@@ -131,6 +134,10 @@
                 <path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/>
                 <circle cx="9" cy="7" r="4"/>
               </svg>
+            <% :cash_register -> %>
+              <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z"/>
+              </svg>
             <% :help -> %>
               <svg class="w-4 h-4 shrink-0" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                 <circle cx="12" cy="12" r="10"/>
@@ -145,6 +152,14 @@
 
     <!-- Sidebar footer -->
     <div class="px-3 py-4 border-t border-gray-100 space-y-0.5">
+      <%= if user do %>
+        <div class="px-3 py-2 mb-1">
+          <p class="text-xs font-semibold text-gray-700 leading-tight"><%= user.first_name %> <%= user.last_name %></p>
+          <span class={"inline-block mt-0.5 text-[10px] font-bold px-1.5 py-0.5 rounded #{Liquor.Accounts.Permissions.role_badge_class(user.role)}"}>
+            <%= Liquor.Accounts.Permissions.role_label(user.role) %>
+          </span>
+        </div>
+      <% end %>
       <a
         href={~p"/"}
         class="flex items-center gap-3 px-3 py-2.5 rounded-lg text-sm text-gray-500 hover:bg-gray-100 hover:text-gray-700 transition"
@@ -204,7 +219,7 @@
           </div>
           <div class="hidden sm:block text-right">
             <p class="text-sm font-semibold text-gray-900 leading-tight"><%= user.first_name %> <%= user.last_name %></p>
-            <p class="text-xs text-gray-400 leading-tight"><%= user.email %></p>
+            <p class="text-xs text-gray-400 leading-tight"><%= Liquor.Accounts.Permissions.role_label(user.role) %></p>
           </div>
         </div>
       <% end %>

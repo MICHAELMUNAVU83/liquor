@@ -65,7 +65,9 @@ defmodule LiquorWeb.Admin.SettingsLive do
   end
 
   def handle_event("save_store", %{"settings" => params}, socket) do
-    keys = ~w(store_name store_short_name store_tagline store_phone store_email site_url)
+    keys =
+      ~w(store_name store_short_name store_tagline store_phone store_till_number store_email site_url receipt_delivery_message)
+
     Enum.each(keys, fn k -> Settings.set(k, params[k] || "") end)
     {:noreply, assign(socket, settings: Settings.all(), saved: true)}
   end
@@ -104,22 +106,32 @@ defmodule LiquorWeb.Admin.SettingsLive do
   def handle_event("pick_banner_product", %{"settings" => settings} = params, socket) do
     # Derive slot from _target since phx-value-* isn't sent with phx-change inside forms
     field = params |> Map.get("_target", []) |> List.last() || ""
-    slot = cond do
-      String.contains?(field, "main")  -> "main"
-      String.contains?(field, "tile1") -> "tile1"
-      String.contains?(field, "tile2") -> "tile2"
-      true -> nil
-    end
-    key = case slot do
-      "main"  -> "hero_main_product_id"
-      "tile1" -> "hero_tile1_product_id"
-      "tile2" -> "hero_tile2_product_id"
-      _       -> nil
-    end
+
+    slot =
+      cond do
+        String.contains?(field, "main") -> "main"
+        String.contains?(field, "tile1") -> "tile1"
+        String.contains?(field, "tile2") -> "tile2"
+        true -> nil
+      end
+
+    key =
+      case slot do
+        "main" -> "hero_main_product_id"
+        "tile1" -> "hero_tile1_product_id"
+        "tile2" -> "hero_tile2_product_id"
+        _ -> nil
+      end
+
     pid = key && settings[key]
     product = if pid && pid != "", do: Map.get(socket.assigns.products_map, pid), else: nil
     preview = if product, do: product.image_url, else: nil
-    previews = if slot, do: Map.put(socket.assigns.banner_previews, slot, preview), else: socket.assigns.banner_previews
+
+    previews =
+      if slot,
+        do: Map.put(socket.assigns.banner_previews, slot, preview),
+        else: socket.assigns.banner_previews
+
     {:noreply, assign(socket, banner_previews: previews)}
   end
 
@@ -274,10 +286,21 @@ defmodule LiquorWeb.Admin.SettingsLive do
               value={@settings["store_phone"]}
             />
             <.settings_field
+              label="Till Number"
+              name="settings[store_till_number]"
+              value={@settings["store_till_number"]}
+            />
+            <.settings_field
               label="Email"
               name="settings[store_email]"
               value={@settings["store_email"]}
               type="email"
+            />
+            <.settings_field
+              label="Receipt Delivery Message"
+              name="settings[receipt_delivery_message]"
+              value={@settings["receipt_delivery_message"]}
+              placeholder="For 24/7 doorstep delivery call 0724261261"
             />
           </div>
           <div class="flex justify-end pt-2">
@@ -370,13 +393,22 @@ defmodule LiquorWeb.Admin.SettingsLive do
               />
               <%= for entry <- @uploads.about_hero_image.entries do %>
                 <div class="flex items-center gap-2 text-xs text-gray-500">
-                  <.live_img_preview entry={entry} class="h-20 w-28 object-cover rounded border border-gray-200" />
+                  <.live_img_preview
+                    entry={entry}
+                    class="h-20 w-28 object-cover rounded border border-gray-200"
+                  />
                   <div class="flex-1">
                     <p class="font-medium text-gray-700 truncate">{entry.client_name}</p>
                     <p>{entry.progress}%</p>
                   </div>
-                  <button type="button" phx-click="cancel_about_upload" phx-value-ref={entry.ref}
-                    class="text-red-400 hover:text-red-600 font-bold text-lg leading-none">×</button>
+                  <button
+                    type="button"
+                    phx-click="cancel_about_upload"
+                    phx-value-ref={entry.ref}
+                    class="text-red-400 hover:text-red-600 font-bold text-lg leading-none"
+                  >
+                    ×
+                  </button>
                 </div>
                 <%= for err <- upload_errors(@uploads.about_hero_image, entry) do %>
                   <p class="text-xs text-red-500">{Phoenix.Naming.humanize(err)}</p>
@@ -764,15 +796,23 @@ defmodule LiquorWeb.Admin.SettingsLive do
       <% end %>
       <!-- Payments Tab -->
       <%= if @tab == "payments" do %>
-        <.form for={%{}} phx-submit="save_payments" class="space-y-5 bg-white border border-gray-200 rounded-xl p-6">
+        <.form
+          for={%{}}
+          phx-submit="save_payments"
+          class="space-y-5 bg-white border border-gray-200 rounded-xl p-6"
+        >
           <h2 class="text-base font-black text-gray-800 mb-1">Payment Settings</h2>
-          <p class="text-sm text-gray-500 -mt-3 mb-4">Enable Paystack for online checkout, or fall back to a WhatsApp order.</p>
-
-          <!-- Paystack toggle -->
+          <p class="text-sm text-gray-500 -mt-3 mb-4">
+            Enable Paystack for online checkout, or fall back to a WhatsApp order.
+          </p>
+          
+    <!-- Paystack toggle -->
           <div class="flex items-center justify-between bg-gray-50 border border-gray-200 rounded-xl px-5 py-4">
             <div>
               <p class="font-semibold text-sm text-gray-800">Enable Paystack Checkout</p>
-              <p class="text-xs text-gray-500 mt-0.5">Customers will pay online via Paystack. If disabled, they'll be sent to WhatsApp.</p>
+              <p class="text-xs text-gray-500 mt-0.5">
+                Customers will pay online via Paystack. If disabled, they'll be sent to WhatsApp.
+              </p>
             </div>
             <label class="relative inline-flex items-center cursor-pointer">
               <input
@@ -782,11 +822,12 @@ defmodule LiquorWeb.Admin.SettingsLive do
                 checked={@settings["paystack_enabled"] == "true"}
                 class="sr-only peer"
               />
-              <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-amber-400 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500"></div>
+              <div class="w-11 h-6 bg-gray-200 peer-focus:ring-2 peer-focus:ring-amber-400 rounded-full peer peer-checked:after:translate-x-full after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-amber-500">
+              </div>
             </label>
           </div>
-
-          <!-- Paystack secret key -->
+          
+    <!-- Paystack secret key -->
           <div>
             <label class="block text-xs font-semibold text-gray-600 mb-1">Paystack Secret Key</label>
             <input
@@ -796,7 +837,9 @@ defmodule LiquorWeb.Admin.SettingsLive do
               placeholder="sk_live_..."
               class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
             />
-            <p class="text-xs text-gray-400 mt-1">Your Paystack secret key from the Paystack dashboard.</p>
+            <p class="text-xs text-gray-400 mt-1">
+              Your Paystack secret key from the Paystack dashboard.
+            </p>
           </div>
 
           <div class="border-t border-gray-100 pt-5">
@@ -807,15 +850,21 @@ defmodule LiquorWeb.Admin.SettingsLive do
               value={@settings["whatsapp_order_phone"]}
               placeholder="+254700123456"
             />
-            <p class="text-xs text-gray-400 mt-1">Include country code. Customers will be sent here with a pre-filled order message.</p>
+            <p class="text-xs text-gray-400 mt-1">
+              Include country code. Customers will be sent here with a pre-filled order message.
+            </p>
           </div>
 
           <div class="flex justify-end pt-2">
-            <button type="submit" class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-6 py-2.5 rounded-lg transition">Save Payment Settings</button>
+            <button
+              type="submit"
+              class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-6 py-2.5 rounded-lg transition"
+            >
+              Save Payment Settings
+            </button>
           </div>
         </.form>
       <% end %>
-
     </div>
     """
   end

@@ -12,6 +12,7 @@ defmodule LiquorWeb.UserAuth do
     statics: LiquorWeb.static_paths()
 
   alias Liquor.Accounts
+  alias Liquor.Accounts.{User, Permissions}
 
   # ---------------------------------------------------------------------------
   # Plug callbacks (used in router pipelines)
@@ -33,7 +34,7 @@ defmodule LiquorWeb.UserAuth do
         |> redirect(to: ~p"/admin/login")
         |> halt()
 
-      not user.is_admin ->
+      not User.admin?(user) ->
         conn
         |> put_flash(:error, "You don't have admin access.")
         |> redirect(to: ~p"/admin/login")
@@ -76,7 +77,7 @@ defmodule LiquorWeb.UserAuth do
   def on_mount(:require_admin, _params, session, socket) do
     socket = mount_current_user(socket, session)
 
-    if socket.assigns.current_user && socket.assigns.current_user.is_admin do
+    if socket.assigns.current_user && User.admin?(socket.assigns.current_user) do
       {:cont, socket}
     else
       socket =
@@ -84,6 +85,20 @@ defmodule LiquorWeb.UserAuth do
         |> Phoenix.LiveView.put_flash(:error, "Please sign in to access the admin panel.")
 
       {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/admin/login")}
+    end
+  end
+
+  def on_mount({:require_permission, section}, _params, _session, socket) do
+    user = socket.assigns.current_user
+
+    if Permissions.can?(user, section) do
+      {:cont, socket}
+    else
+      socket =
+        socket
+        |> Phoenix.LiveView.put_flash(:error, "You don't have access to this section.")
+
+      {:halt, Phoenix.LiveView.redirect(socket, to: ~p"/admin")}
     end
   end
 

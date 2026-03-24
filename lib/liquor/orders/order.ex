@@ -24,15 +24,16 @@ defmodule Liquor.Orders.Order do
     field :customer_phone,   :string
     field :notes,            :string
 
-    belongs_to :user,  Liquor.Accounts.User
-    has_many   :items, Liquor.Orders.OrderItem, foreign_key: :order_id
+    belongs_to :user,          Liquor.Accounts.User
+    belongs_to :cash_register, Liquor.Cash.CashRegister
+    has_many   :items,         Liquor.Orders.OrderItem, foreign_key: :order_id
 
     timestamps()
   end
 
   def changeset(order, attrs) do
     order
-    |> cast(attrs, [:user_id, :status, :total_amount, :shipping_amount, :discount_amount,
+    |> cast(attrs, [:user_id, :cash_register_id, :status, :total_amount, :shipping_amount, :discount_amount,
                     :shipping_name, :shipping_line1, :shipping_line2, :shipping_city,
                     :shipping_state, :shipping_zip, :shipping_country,
                     :payment_method, :payment_reference, :payment_status,

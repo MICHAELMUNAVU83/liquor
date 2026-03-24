@@ -10,7 +10,7 @@ defmodule LiquorWeb.Admin.SessionController do
 
   def create(conn, %{"email" => email, "password" => password}) do
     case Accounts.authenticate(email, password) do
-      {:ok, %{is_admin: true} = user} ->
+      {:ok, %{role: role} = user} when not is_nil(role) ->
         conn
         |> put_flash(:info, "Welcome back, #{user.first_name}!")
         |> UserAuth.log_in_admin(user)

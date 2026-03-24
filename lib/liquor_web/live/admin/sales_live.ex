@@ -228,21 +228,30 @@ defmodule LiquorWeb.Admin.SalesLive do
       Decimal.add(acc, Decimal.mult(i.price, Decimal.new(i.qty)))
     end)
 
+    cash_register_id =
+      if pm == "cash" do
+        case Liquor.Cash.get_active_register() do
+          nil      -> nil
+          register -> register.id
+        end
+      end
+
     order_attrs = %{
-      user_id:          cid,
-      status:           "delivered",
-      payment_status:   "paid",
-      payment_method:   pm,
-      total_amount:     subtotal,
-      shipping_amount:  Decimal.new("0"),
-      discount_amount:  Decimal.new("0"),
-      notes:            notes,
-      shipping_name:    socket.assigns.customer_name,
-      shipping_line1:   "In-store / Admin sale",
-      shipping_city:    "N/A",
-      shipping_state:   "N/A",
-      shipping_zip:     "N/A",
-      shipping_country: "N/A"
+      user_id:           cid,
+      status:            "delivered",
+      payment_status:    "paid",
+      payment_method:    pm,
+      cash_register_id:  cash_register_id,
+      total_amount:      subtotal,
+      shipping_amount:   Decimal.new("0"),
+      discount_amount:   Decimal.new("0"),
+      notes:             notes,
+      shipping_name:     socket.assigns.customer_name,
+      shipping_line1:    "In-store / Admin sale",
+      shipping_city:     "N/A",
+      shipping_state:    "N/A",
+      shipping_zip:      "N/A",
+      shipping_country:  "N/A"
     }
 
     case Orders.create_order(order_attrs) do
@@ -1062,10 +1071,20 @@ defmodule LiquorWeb.Admin.SalesLive do
             <% end %>
           </div>
 
-          <div class="px-6 py-4 border-t border-gray-100">
-            <button phx-click="close_sale_detail" class="w-full border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-lg hover:bg-gray-50 transition text-sm">
+          <div class="px-6 py-4 border-t border-gray-100 flex gap-3">
+            <button phx-click="close_sale_detail" class="flex-1 border border-gray-200 text-gray-600 font-semibold py-2.5 rounded-lg hover:bg-gray-50 transition text-sm">
               Close
             </button>
+            <a
+              href={"/admin/receipt/#{s.id}"}
+              target="_blank"
+              class="flex-1 flex items-center justify-center gap-2 bg-gray-900 hover:bg-gray-700 text-white font-bold py-2.5 rounded-lg transition text-sm"
+            >
+              <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z"/>
+              </svg>
+              Print Receipt
+            </a>
           </div>
         </div>
       </div>

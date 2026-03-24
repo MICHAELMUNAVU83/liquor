@@ -2,7 +2,7 @@ defmodule LiquorWeb.Admin.UsersLive do
   use LiquorWeb, :live_view
 
   alias Liquor.Accounts
-  alias Liquor.Accounts.User
+  alias Liquor.Accounts.{User, Permissions}
 
   @impl true
   def mount(_params, _session, socket) do
@@ -22,7 +22,7 @@ defmodule LiquorWeb.Admin.UsersLive do
   defp load_users(socket) do
     users =
       Accounts.list_users(search: socket.assigns.search)
-      |> Enum.filter(& &1.is_admin)
+      |> Enum.filter(&User.admin?/1)
 
     assign(socket, users: users)
   end
@@ -59,9 +59,6 @@ defmodule LiquorWeb.Admin.UsersLive do
   end
 
   def handle_event("save_user", %{"user" => params}, socket) do
-    # Force is_admin true for new users created here
-    params = Map.put(params, "is_admin", "true")
-
     result =
       case socket.assigns.editing do
         nil -> Accounts.create_user(params)
@@ -87,12 +84,6 @@ defmodule LiquorWeb.Admin.UsersLive do
     {:noreply, socket |> put_flash(:info, "User updated.") |> load_users()}
   end
 
-  def handle_event("toggle_admin", %{"id" => id}, socket) do
-    user = Accounts.get_user!(id)
-    {:ok, _} = Accounts.update_user(user, %{is_admin: !user.is_admin})
-    {:noreply, socket |> put_flash(:info, "User updated.") |> load_users()}
-  end
-
   def handle_event("delete_user", %{"id" => id}, socket) do
     user = Accounts.get_user!(id)
     {:ok, _} = Accounts.delete_user(user)
@@ -115,7 +106,7 @@ defmodule LiquorWeb.Admin.UsersLive do
           phx-click="new_user"
           class="bg-amber-500 hover:bg-amber-600 text-white font-bold text-sm px-5 py-2.5 rounded-lg transition uppercase tracking-widest"
         >
-          + Add Admin
+          + Add User
         </button>
       </div>
 
@@ -138,7 +129,7 @@ defmodule LiquorWeb.Admin.UsersLive do
               <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">User</th>
               <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Email</th>
               <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Phone</th>
-              <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Admin</th>
+              <th class="text-left px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Role</th>
               <th class="text-center px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Active</th>
               <th class="text-right px-5 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Actions</th>
             </tr>
@@ -156,14 +147,10 @@ defmodule LiquorWeb.Admin.UsersLive do
                 </td>
                 <td class="px-5 py-3 text-gray-600">{user.email}</td>
                 <td class="px-5 py-3 text-gray-500">{user.phone || "—"}</td>
-                <td class="px-5 py-3 text-center">
-                  <button phx-click="toggle_admin" phx-value-id={user.id} class="cursor-pointer">
-                    <%= if user.is_admin do %>
-                      <span class="inline-block bg-amber-100 text-amber-700 text-xs font-bold px-2 py-0.5 rounded">Yes</span>
-                    <% else %>
-                      <span class="inline-block bg-gray-100 text-gray-400 text-xs font-bold px-2 py-0.5 rounded">No</span>
-                    <% end %>
-                  </button>
+                <td class="px-5 py-3">
+                  <span class={"inline-block text-xs font-bold px-2 py-0.5 rounded #{Permissions.role_badge_class(user.role)}"}>
+                    {Permissions.role_label(user.role)}
+                  </span>
                 </td>
                 <td class="px-5 py-3 text-center">
                   <button
@@ -224,7 +211,7 @@ defmodule LiquorWeb.Admin.UsersLive do
         >
           <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
             <h2 class="text-lg font-black text-gray-900">
-              {if @editing, do: "Edit Admin User", else: "New Admin User"}
+              {if @editing, do: "Edit User", else: "New Admin User"}
             </h2>
             <button phx-click="close_modal" class="text-gray-400 hover:text-gray-700">
               <svg class="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
@@ -254,6 +241,23 @@ defmodule LiquorWeb.Admin.UsersLive do
             <div>
               <label class="block text-xs font-semibold text-gray-600 mb-1">Phone</label>
               <input type="text" name="user[phone]" value={Phoenix.HTML.Form.input_value(@form, :phone)} placeholder="+254…" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400" />
+            </div>
+            <div>
+              <label class="block text-xs font-semibold text-gray-600 mb-1">Role *</label>
+              <select name="user[role]" class="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400">
+                <option value="">— Select role —</option>
+                <%= for role <- Permissions.roles() do %>
+                  <option value={role} selected={Phoenix.HTML.Form.input_value(@form, :role) == role}>
+                    {Permissions.role_label(role)}
+                  </option>
+                <% end %>
+              </select>
+              <%= for {msg, _} <- Keyword.get_values(@form.errors || [], :role) do %>
+                <p class="text-xs text-red-500 mt-0.5">{msg}</p>
+              <% end %>
+              <p class="text-xs text-gray-400 mt-1">
+                Super Admin: full access · Manager: no users/settings · Cashier: orders &amp; customers · Inventory Clerk: products &amp; stock
+              </p>
             </div>
             <%= if is_nil(@editing) do %>
               <div>
