@@ -5,56 +5,53 @@ alias Liquor.Settings.SiteSetting
 
 IO.puts("🌱  Seeding database...")
 
-# Helper: insert only if the slug doesn't already exist
-defmodule Seeds.Helpers do
-  def upsert_category(attrs) do
-    case Repo.get_by(Category, slug: attrs.slug) do
-      nil ->
-        %Category{}
-        |> Category.changeset(attrs)
-        |> Repo.insert!()
+upsert_category = fn attrs ->
+  case Repo.get_by(Category, slug: attrs.slug) do
+    nil ->
+      %Category{}
+      |> Category.changeset(attrs)
+      |> Repo.insert!()
 
-      existing ->
-        existing
-    end
+    existing ->
+      existing
   end
+end
 
-  def upsert_brand(attrs) do
-    case Repo.get_by(Brand, slug: attrs.slug) do
-      nil ->
-        %Brand{}
-        |> Brand.changeset(attrs)
-        |> Repo.insert!()
+upsert_brand = fn attrs ->
+  case Repo.get_by(Brand, slug: attrs.slug) do
+    nil ->
+      %Brand{}
+      |> Brand.changeset(attrs)
+      |> Repo.insert!()
 
-      existing ->
-        existing
-    end
+    existing ->
+      existing
   end
+end
 
-  def upsert_user(attrs) do
-    case Repo.get_by(User, email: attrs.email) do
-      nil ->
-        %User{}
-        |> User.changeset(attrs)
-        |> Repo.insert!()
+upsert_user = fn attrs ->
+  case Repo.get_by(User, email: attrs.email) do
+    nil ->
+      %User{}
+      |> User.changeset(attrs)
+      |> Repo.insert!()
 
-      existing ->
-        existing
-    end
+    existing ->
+      existing
   end
+end
 
-  def upsert_site_setting(key, value) do
-    case Repo.get_by(SiteSetting, key: key) do
-      nil ->
-        %SiteSetting{}
-        |> SiteSetting.changeset(%{key: key, value: value})
-        |> Repo.insert!()
+upsert_site_setting = fn key, value ->
+  case Repo.get_by(SiteSetting, key: key) do
+    nil ->
+      %SiteSetting{}
+      |> SiteSetting.changeset(%{key: key, value: value})
+      |> Repo.insert!()
 
-      existing ->
-        existing
-        |> SiteSetting.changeset(%{value: value})
-        |> Repo.update!()
-    end
+    existing ->
+      existing
+      |> SiteSetting.changeset(%{value: value})
+      |> Repo.update!()
   end
 end
 
@@ -76,7 +73,7 @@ categories =
         {"Mezcal", "mezcal", 10}
       ] do
     cat =
-      Seeds.Helpers.upsert_category(%{
+      upsert_category.(%{
         name: name,
         slug: slug,
         position: pos,
@@ -111,7 +108,7 @@ brands =
         {"Jim Beam", "jim-beam", "USA"}
       ] do
     brand =
-      Seeds.Helpers.upsert_brand(%{
+      upsert_brand.(%{
         name: name,
         slug: slug,
         country: country,
@@ -131,7 +128,7 @@ _brands_by_slug = Map.new(brands)
 # Admin user
 # ---------------------------------------------------------------------------
 
-Seeds.Helpers.upsert_user(%{
+upsert_user.(%{
   email: "admin@gmail.com",
   password: "password",
   first_name: "Admin",
@@ -149,7 +146,7 @@ for {key, value} <- [
       {"store_till_number", ""},
       {"receipt_delivery_message", "For 24/7 doorstep delivery call 0724261261"}
     ] do
-  Seeds.Helpers.upsert_site_setting(key, value)
+  upsert_site_setting.(key, value)
 end
 
 IO.puts("  ✓ Site settings seeded")
